@@ -15,9 +15,13 @@ const io = new Server(server, {
 // Serve static files from current directory
 app.use(express.static(__dirname));
 
+// Keep-alive endpoint (prevents Render free tier from sleeping)
+app.get('/ping', (req, res) => res.send('ok'));
+
 // Store latest cues per room so new clients joining can get them immediately
 const roomCues = new Map();
 const roomState = new Map(); // Store latest play state (pausedAt, running, startAt)
+const roomSockets = new Map(); // room -> Set<socketId>
 
 io.on('connection', (socket) => {
   // 1. Time Sync (NTP-like)
@@ -30,13 +34,19 @@ io.on('connection', (socket) => {
     socket.join(room);
     socket.data.room = room;
     socket.data.role = role;
-    
+
+    // Track connected sockets per room
+    if (!roomSockets.has(room)) roomSockets.set(room, new Set());
+    roomSockets.get(room).add(socket.id);
+    io.to(room).emit('clientCount', roomSockets.get(room).size);
+
     // Send current state to newly joined client
-    if (roomCues.has(room)) {
-      socket.emit('syncCues', roomCues.get(room));
-    }
-    if (roomState.has(room)) {
-      socket.emit('syncState', roomState.get(room));
+    if (roomCues.has(room)) socket.emit('syncCues', roomCues.get(room));
+    if (roomState.has(room)) socket.emit('syncState', roomState.get(room));
+
+    // Ask host to re-broadcast latest state to new client
+    if (role === 'client') {
+      socket.to(room).emit('requestResync');
     }
   });
 
@@ -65,7 +75,19 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    // Keep state for reconnects
+    const room = socket.data.room;
+    if (room && roomSockets.has(room)) {
+      roomSockets.get(room).delete(socket.id);
+      io.to(room).emit('clientCount', roomSockets.get(room).size);
+    }
+  });
+
+  // 5. Client done relay (client -> host)
+  socket.on('clientDone', (data) => {
+    const room = socket.data.room;
+    if (room) {
+      socket.to(room).emit('clientDone', data);
+    }
   });
 });
 
