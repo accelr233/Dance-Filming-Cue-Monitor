@@ -520,7 +520,10 @@
       <section class="section">
         <div class="section-title">
           <h2>提示列表</h2>
-          <button class="small-btn host-only" id="sortBtn" type="button">排序</button>
+          <div class="icon-row">
+            <button class="small-btn host-only" id="syncCuesBtn" type="button" title="手动同步 Cue 列表到所有 Client">↑同步</button>
+            <button class="small-btn host-only" id="sortBtn" type="button">排序</button>
+          </div>
         </div>
         <div class="cue-list" id="cueList"></div>
       </section>
@@ -853,6 +856,15 @@
       renderList();
     });
 
+    $("#syncCuesBtn").addEventListener("click", () => {
+      if (socket && state.role === 'host') {
+        socket.emit('updateCues', state.cues);
+        const btn = $("#syncCuesBtn");
+        btn.textContent = "✓ 已同步";
+        setTimeout(() => btn.textContent = "↑同步", 1500);
+      }
+    });
+
     $("#sortBtn").addEventListener("click", () => {
       saveCues();
       state.lastListKey = "";
@@ -929,6 +941,10 @@
         syncTimeWithServer();
         setInterval(syncTimeWithServer, 30000);
         socket.emit('joinRoom', { room, role });
+        // Host: push the local cue list to server right after joining
+        if (role === 'host') {
+          setTimeout(() => socket.emit('updateCues', state.cues), 200);
+        }
       });
       
       socket.on('syncCues', (cues) => {
