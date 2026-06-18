@@ -1,0 +1,13 @@
+{
+  "name": "dance-filming-cue-monitor",
+  "version": "2.0.0",
+  "description": "WebSocket based real-time cue monitor for dance filming",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
+}

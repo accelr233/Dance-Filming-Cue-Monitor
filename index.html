@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101418">
+  <title>Dance Filming Cue Monitor</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101418;
+      --panel: #171d22;
+      --panel-2: #20272d;
+      --text: #f5f7f8;
+      --muted: #9ba8af;
+      --line: #2f3940;
+      --accent: #ffcc4d;
+      --accent-2: #42d3a5;
+      --danger: #ff6b6b;
+      --blue: #62b4ff;
+      --shadow: 0 20px 60px rgba(0, 0, 0, .35);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      background:
+        radial-gradient(circle at 14% 0%, rgba(255, 204, 77, .12), transparent 30rem),
+        linear-gradient(145deg, #101418 0%, #152026 45%, #101418 100%);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      width: min(100%, 980px);
+      min-height: 100svh;
+      margin: 0 auto;
+      padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+      display: grid;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      min-width: 0;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .icon-row {
+      display: flex;
+      gap: 8px;
+      flex: none;
+    }
+
+    .icon-btn,
+    .small-btn {
+      min-width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      display: inline-grid;
+      place-items: center;
+    }
+
+    .small-btn {
+      padding: 0 12px;
+      width: auto;
+      min-width: 52px;
+      font-size: 13px;
+    }
+
+    .hero {
+      min-height: 44svh;
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 8px;
+      background:
+        linear-gradient(150deg, rgba(255, 204, 77, .16), transparent 42%),
+        linear-gradient(0deg, rgba(0, 0, 0, .16), rgba(0, 0, 0, .16)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+      overflow: hidden;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .07);
+      border: 1px solid rgba(255, 255, 255, .08);
+      white-space: nowrap;
+    }
+
+    .sync-good {
+      color: var(--accent-2);
+    }
+
+    .cue-stage {
+      align-self: center;
+      display: grid;
+      gap: 10px;
+      text-align: center;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .countdown {
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(48px, 19vw, 142px);
+      line-height: .92;
+      color: var(--accent);
+      text-shadow: 0 10px 32px rgba(255, 204, 77, .18);
+    }
+
+    .name {
+      margin: 0;
+      font-size: clamp(34px, 11vw, 86px);
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .shot {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: clamp(16px, 4.8vw, 28px);
+      overflow-wrap: anywhere;
+    }
+
+    .now-next {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .mini-panel,
+    .fingerprint-panel {
+      min-width: 0;
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(255, 255, 255, .045);
+    }
+
+    .mini-panel b,
+    .mini-panel span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mini-panel span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .controls,
+    .wide-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .primary,
+    .secondary {
+      height: 58px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .primary {
+      color: #101418;
+      background: var(--accent);
+    }
+
+    .secondary {
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .secondary.blue {
+      border-color: rgba(98, 180, 255, .55);
+      color: #d9ecff;
+    }
+
+    .secondary.active {
+      border-color: rgba(66, 211, 165, .72);
+      color: var(--accent-2);
+    }
+
+    .nudge {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .section {
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      padding-top: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .cue-list {
+      display: grid;
+      gap: 8px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      position: relative;
+    }
+    body:not(.role-client) .cue-list {
+      max-height: 50vh;
+      padding-right: 4px;
+    }
+    body.role-client .cue-list {
+      max-height: 268px;
+      padding-right: 4px;
+    }
+
+    .cue-item {
+      display: grid;
+      grid-template-columns: 70px 1fr 44px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+
+    .cue-item.active {
+      border-color: rgba(66, 211, 165, .65);
+      background: rgba(66, 211, 165, .08);
+    }
+
+    .cue-item.next {
+      border-color: rgba(255, 204, 77, .65);
+    }
+
+    .cue-time {
+      font-variant-numeric: tabular-nums;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .cue-copy {
+      min-width: 0;
+    }
+
+    .cue-copy strong,
+    .cue-copy small {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cue-copy small {
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .remove {
+      color: var(--danger);
+      background: transparent;
+      border: 1px solid rgba(255, 107, 107, .4);
+      border-radius: 8px;
+      height: 38px;
+      font-size: 20px;
+    }
+
+    .editor {
+      display: grid;
+      gap: 8px;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 8px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 12px;
+      outline: none;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+    }
+
+    textarea {
+      min-height: 118px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .hint,
+    .fingerprint-status {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .meter {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .08);
+      overflow: hidden;
+    }
+
+    .meter span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--accent-2));
+      transition: width .18s ease;
+    }
+
+    @media (min-width: 760px) {
+      .app {
+        grid-template-columns: minmax(420px, 1.1fr) minmax(340px, .9fr);
+        align-content: start;
+      }
+
+      .topbar {
+        grid-column: 1 / -1;
+      }
+
+      .hero {
+        position: sticky;
+        top: 16px;
+      }
+    }
+
+    .lobby {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+    }
+    .lobby input {
+      width: 200px;
+      font-size: 24px;
+      text-align: center;
+      letter-spacing: 4px;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      outline: none;
+    }
+    .role-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 200px;
+    }
+    .role-buttons button {
+      height: 48px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 15px;
+    }
+    .role-client .host-only {
+      display: none !important;
+    }
+    .cue-item.done {
+      opacity: 0.4;
+      border-color: rgba(66, 211, 165, .4);
+    }
+    .cue-item.done .cue-time {
+      color: var(--accent-2);
+      text-decoration: line-through;
+    }
+    .cue-item.done .cue-copy strong {
+      text-decoration: line-through;
+    }
+  </style>
+</head>
+<body>
+  <div id="lobby" class="lobby">
+    <h1>舞蹈跟拍监视器</h1>
+    <input type="text" id="roomCode" placeholder="房间号" maxlength="4">
+    <div class="role-buttons">
+      <button id="joinHostBtn" class="primary">我是控制端 (Host)</button>
+      <button id="joinClientBtn" class="secondary">我是摄影师 (Client)</button>
+    </div>
+  </div>
+
+  <main class="app" id="app" style="display: none;">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Dance Filming Cue Monitor</h1>
+        <p>手机屏幕提前提示下一个拍摄对象</p>
+      </div>
+      <div class="icon-row">
+        <button class="icon-btn" id="fullscreenBtn" type="button" title="全屏">FS</button>
+        <button class="icon-btn" id="wakeBtn" type="button" title="保持亮屏">ON</button>
+      </div>
+    </header>
+
+    <section class="hero" aria-live="polite">
+      <div class="status">
+        <span class="pill" id="clock">00:00.0</span>
+        <span class="pill" id="syncState">未同步</span>
+      </div>
+
+      <div class="cue-stage">
+        <div class="label">下一个</div>
+        <div class="countdown" id="countdown">--.-</div>
+        <h2 class="name" id="nextName">等待同步</h2>
+        <div class="shot" id="nextShot">手动同步，或上传音乐后启动自动同步</div>
+      </div>
+
+      <div class="now-next">
+        <div class="mini-panel">
+          <span>现在</span>
+          <b id="nowCue">未开始</b>
+        </div>
+        <div class="mini-panel">
+          <span>再下一个</span>
+          <b id="afterCue">-</b>
+        </div>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="section host-only">
+        <div class="section-title">
+          <h2>音乐控制</h2>
+        </div>
+        <div class="editor" style="padding: 10px; background: rgba(255, 255, 255, .045); border: 1px solid rgba(255, 255, 255, .08); border-radius: 8px;">
+          <input id="audioFile" type="file" accept="audio/*, audio/mpeg, audio/mp3, audio/wav, audio/x-m4a, .mp3, .wav, .m4a, .aac" aria-label="上传音乐" style="border: none; background: transparent; padding: 0;">
+          <audio id="audioPlayer" controls style="width: 100%; height: 44px; outline: none; margin-top: 8px;"></audio>
+        </div>
+        <p class="hint">上传音乐后播放。拖拽进度条将实时无缝同步到所有摄影师的屏幕上。</p>
+      </section>
+
+      <section class="section">
+        <div class="section-title">
+          <h2>提示列表</h2>
+          <button class="small-btn host-only" id="sortBtn" type="button">排序</button>
+        </div>
+        <div class="cue-list" id="cueList"></div>
+      </section>
+
+      <section class="section host-only">
+        <div class="section-title">
+          <h2>添加提示</h2>
+        </div>
+        <form class="editor" id="cueForm">
+          <div class="fields">
+            <input id="cueTime" inputmode="decimal" placeholder="00:12" aria-label="提示时间">
+            <input id="cueName" placeholder="要拍谁" aria-label="要拍谁">
+          </div>
+          <input id="cueShot" placeholder="镜头/位置，比如左侧特写" aria-label="镜头说明">
+          <button class="secondary" type="submit">添加到列表</button>
+        </form>
+      </section>
+
+      <section class="section host-only">
+        <div class="section-title">
+          <h2>批量编辑</h2>
+        </div>
+        <textarea id="bulkText" spellcheck="false" aria-label="批量编辑"></textarea>
+        <div class="wide-actions">
+          <button class="secondary" id="loadBulkBtn" type="button">应用文本</button>
+          <button class="secondary" id="copyBtn" type="button">复制备份</button>
+        </div>
+        <p class="hint">每行格式：时间, 名字, 镜头。例：00:18, 小林, 中景跟拍</p>
+      </section>
+    </div>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    const STORAGE_KEY = "dance-filming-cues-v1";
+
+
+    const defaultCues = [
+      { time: 4, name: "开场全景", shot: "舞台全景，确认所有人入画" },
+      { time: 12, name: "A组", shot: "左侧中景" },
+      { time: 24, name: "小林", shot: "特写，第二个八拍" },
+      { time: 38, name: "B组", shot: "右侧横移" },
+      { time: 54, name: "全员", shot: "收尾定点，全景" }
+    ];
+
+    const state = {
+      cues: loadCues(),
+      startAt: null,
+      pausedAt: 0,
+      running: false,
+      wakeLock: null,
+      lastListKey: "",
+      role: null,
+      room: null,
+      clientDone: new Set(),
+
+    };
+
+    let socket = null;
+    let serverTimeOffset = 0;
+
+    function getServerTime() {
+      return Date.now() + serverTimeOffset;
+    }
+
+    function syncTimeWithServer() {
+      if (!socket) return;
+      const start = Date.now();
+      socket.emit('ping', start, (serverTime) => {
+        const latency = (Date.now() - start) / 2;
+        serverTimeOffset = serverTime - latency - Date.now();
+      });
+    }
+
+    function broadcastState() {
+      if (!socket || state.role !== 'host') return;
+      const serverNow = getServerTime();
+      let serverStartAt = 0;
+      if (state.running) {
+        const currentSeconds = (performance.now() - state.startAt) / 1000;
+        serverStartAt = serverNow - currentSeconds * 1000;
+      }
+      socket.emit('updateState', {
+        running: state.running,
+        pausedAt: state.pausedAt,
+        serverStartAt: serverStartAt
+      });
+    }
+
+    const $ = (selector) => document.querySelector(selector);
+    const cueList = $("#cueList");
+    const bulkText = $("#bulkText");
+    
+    
+
+    function loadCues() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultCues;
+      } catch {
+        return defaultCues;
+      }
+    }
+
+    function saveCues(broadcast = true) {
+      state.cues.sort((a, b) => a.time - b.time);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cues));
+      if (bulkText) {
+        bulkText.value = state.cues.map(cue => `${formatTime(cue.time)}, ${cue.name}, ${cue.shot}`).join("\n");
+      }
+      if (broadcast && socket && state.role === 'host') {
+        socket.emit('updateCues', state.cues);
+      }
+    }
+
+    function parseTime(value) {
+      const raw = value.trim();
+      if (!raw) return NaN;
+      if (raw.includes(":")) {
+        const parts = raw.split(":").map(Number);
+        if (parts.some(Number.isNaN)) return NaN;
+        return parts.reduce((total, part) => total * 60 + part, 0);
+      }
+      return Number(raw);
+    }
+
+    function formatTime(seconds) {
+      const safe = Math.max(0, seconds);
+      const mins = Math.floor(safe / 60);
+      const secs = Math.floor(safe % 60);
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    }
+
+    function formatClock(seconds) {
+      const safe = Math.max(0, seconds);
+      const mins = Math.floor(safe / 60);
+      const secs = Math.floor(safe % 60);
+      const tenths = Math.floor((safe % 1) * 10);
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${tenths}`;
+    }
+
+    function currentTime() {
+      if (!state.running) return state.pausedAt;
+      return (performance.now() - state.startAt) / 1000;
+    }
+
+    function syncTo(seconds, label = "播放中", broadcast = true) {
+      state.pausedAt = Math.max(0, seconds);
+      state.startAt = performance.now() - state.pausedAt * 1000;
+      state.running = true;
+      $("#syncState").textContent = label;
+      $("#syncState").classList.add("sync-good");
+      state.lastListKey = "";
+      if (broadcast) broadcastState();
+    }
+
+    function getCueWindow(time) {
+      const sorted = [...state.cues].sort((a, b) => a.time - b.time);
+      const nextIndex = sorted.findIndex(cue => cue.time > time);
+      const now = [...sorted].reverse().find(cue => cue.time <= time);
+      const next = nextIndex >= 0 ? sorted[nextIndex] : null;
+      const after = nextIndex >= 0 ? sorted[nextIndex + 1] : null;
+      return { sorted, now, next, after };
+    }
+
+    function renderHero() {
+      const time = currentTime();
+      const { now, next, after } = getCueWindow(time);
+      $("#clock").textContent = formatClock(time);
+      $("#nowCue").textContent = now ? now.name : "未开始";
+      $("#afterCue").textContent = after ? `${formatTime(after.time)} ${after.name}` : "-";
+
+      if (next) {
+        const left = next.time - time;
+        $("#countdown").textContent = left < 10 ? left.toFixed(1) : Math.ceil(left).toString();
+        $("#nextName").textContent = next.name;
+        $("#nextShot").textContent = next.shot || formatTime(next.time);
+      } else {
+        $("#countdown").textContent = "END";
+        $("#nextName").textContent = "提示结束";
+        $("#nextShot").textContent = "可以停止拍摄或等待下一首";
+      }
+    }
+
+    function renderList() {
+      const time = currentTime();
+      const { now, next } = getCueWindow(time);
+      const listKey = `${now?.time ?? "none"}|${next?.time ?? "none"}|${state.cues.length}`;
+      if (state.lastListKey === listKey && cueList.children.length === state.cues.length) return;
+      state.lastListKey = listKey;
+      cueList.innerHTML = "";
+
+      let activeItemNode = null;
+
+      state.cues.forEach((cue, index) => {
+        const item = document.createElement("div");
+        item.className = "cue-item";
+        if (now === cue) item.classList.add("active");
+        if (next === cue) item.classList.add("next");
+        if (state.clientDone.has(cue.time)) item.classList.add("done");
+        
+        item.innerHTML = `
+          <div class="cue-time">${formatTime(cue.time)}</div>
+          <div class="cue-copy">
+            <strong>${escapeHtml(cue.name)}</strong>
+            <small>${escapeHtml(cue.shot || "")}</small>
+          </div>
+          <button class="remove host-only" type="button" aria-label="删除">x</button>
+        `;
+        
+        item.querySelector(".remove").addEventListener("click", (e) => {
+          e.stopPropagation();
+          state.cues.splice(index, 1);
+          state.lastListKey = "";
+          saveCues();
+          renderList();
+        });
+        
+        if (state.role === 'client') {
+          item.addEventListener("click", () => {
+            if (state.clientDone.has(cue.time)) {
+              state.clientDone.delete(cue.time);
+            } else {
+              state.clientDone.add(cue.time);
+            }
+            state.lastListKey = "";
+            renderList();
+          });
+          item.style.cursor = "pointer";
+        }
+
+        if (state.role === 'host') {
+          item.addEventListener("dblclick", () => {
+            const newTimeStr = prompt("修改时间 (格式: 秒数 或 分:秒)", formatTime(cue.time));
+            if (newTimeStr === null) return;
+            const newTime = parseTime(newTimeStr);
+            if (Number.isNaN(newTime)) return alert("时间格式不正确");
+            
+            const newName = prompt("修改要拍谁 (名称)", cue.name);
+            if (newName === null) return;
+            
+            const newShot = prompt("修改镜头说明", cue.shot || "");
+            if (newShot === null) return;
+            
+            cue.time = newTime;
+            cue.name = newName.trim();
+            cue.shot = newShot.trim();
+            saveCues();
+            state.lastListKey = "";
+            renderList();
+          });
+          item.style.cursor = "pointer";
+          item.title = "双击修改内容";
+        }
+        
+        cueList.appendChild(item);
+
+        if ((now === cue || next === cue) && !activeItemNode) {
+          activeItemNode = item;
+        }
+      });
+
+      if (state.role === 'client' && state.running && activeItemNode) {
+        setTimeout(() => {
+          cueList.scrollTo({
+            top: activeItemNode.offsetTop - 10,
+            behavior: 'smooth'
+          });
+        }, 10);
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function tick() {
+      renderHero();
+      renderList();
+      requestAnimationFrame(tick);
+    }
+
+    const audioPlayer = $("#audioPlayer");
+    $("#audioFile").addEventListener("change", event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      audioPlayer.src = url;
+    });
+
+    audioPlayer.addEventListener("play", () => {
+      syncTo(audioPlayer.currentTime, "播放中", true);
+    });
+
+    audioPlayer.addEventListener("pause", () => {
+      state.running = false;
+      state.pausedAt = audioPlayer.currentTime;
+      $("#syncState").textContent = "已暂停";
+      broadcastState();
+    });
+
+    audioPlayer.addEventListener("seeked", () => {
+      if (state.running) {
+        syncTo(audioPlayer.currentTime, "播放中", true);
+      } else {
+        state.pausedAt = audioPlayer.currentTime;
+        broadcastState();
+        renderHero();
+      }
+    });
+
+    $("#cueForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const time = parseTime($("#cueTime").value);
+      const name = $("#cueName").value.trim();
+      const shot = $("#cueShot").value.trim();
+      if (!Number.isFinite(time) || !name) return;
+      state.cues.push({ time, name, shot });
+      $("#cueTime").value = "";
+      $("#cueName").value = "";
+      $("#cueShot").value = "";
+      saveCues();
+      state.lastListKey = "";
+      renderList();
+    });
+
+    $("#sortBtn").addEventListener("click", () => {
+      saveCues();
+      state.lastListKey = "";
+      renderList();
+    });
+
+    $("#loadBulkBtn").addEventListener("click", () => {
+      const parsed = bulkText.value.split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => {
+          const [timeText, name = "", ...shotParts] = line.split(",").map(part => part.trim());
+          return { time: parseTime(timeText), name, shot: shotParts.join(", ") };
+        })
+        .filter(cue => Number.isFinite(cue.time) && cue.name);
+      if (!parsed.length) return;
+      state.cues = parsed;
+      saveCues();
+      state.lastListKey = "";
+      renderList();
+    });
+
+    $("#copyBtn").addEventListener("click", async () => {
+      saveCues();
+      await navigator.clipboard.writeText(bulkText.value);
+      $("#copyBtn").textContent = "已复制";
+      setTimeout(() => $("#copyBtn").textContent = "复制备份", 1200);
+    });
+
+    $("#fullscreenBtn").addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen?.();
+      } else {
+        await document.exitFullscreen?.();
+      }
+    });
+
+    $("#wakeBtn").addEventListener("click", async () => {
+      try {
+        if (state.wakeLock) {
+          await state.wakeLock.release();
+          state.wakeLock = null;
+          $("#wakeBtn").textContent = "ON";
+          return;
+        }
+        state.wakeLock = await navigator.wakeLock?.request("screen");
+        $("#wakeBtn").textContent = "LOCK";
+      } catch {
+        $("#wakeBtn").textContent = "!";
+      }
+    });
+
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible" && state.wakeLock) {
+        state.wakeLock = await navigator.wakeLock?.request("screen");
+      }
+    });
+
+    $("#joinHostBtn").addEventListener("click", () => joinRoom('host'));
+    $("#joinClientBtn").addEventListener("click", () => joinRoom('client'));
+
+    function joinRoom(role) {
+      const room = $("#roomCode").value.trim() || "0000";
+      state.role = role;
+      state.room = room;
+      
+      if (role === 'client') {
+        document.body.classList.add('role-client');
+      }
+      
+      socket = io();
+      
+      socket.on('connect', () => {
+        syncTimeWithServer();
+        setInterval(syncTimeWithServer, 30000);
+        socket.emit('joinRoom', { room, role });
+      });
+      
+      socket.on('syncCues', (cues) => {
+        state.cues = cues;
+        saveCues(false);
+        state.lastListKey = "";
+        renderList();
+      });
+      
+      socket.on('syncState', (remote) => {
+        state.running = remote.running;
+        state.pausedAt = remote.pausedAt;
+        if (remote.running) {
+          const elapsedMs = getServerTime() - remote.serverStartAt;
+          state.startAt = performance.now() - elapsedMs;
+        }
+        $("#syncState").textContent = remote.running ? "已同步" : "已暂停";
+        $("#syncState").classList.add("sync-good");
+      });
+      
+      $("#lobby").style.display = "none";
+      $("#app").style.display = "";
+      
+      saveCues(false);
+      renderHero();
+      renderList();
+      tick();
+    }
+    
+  </script>
+</body>
+</html>
