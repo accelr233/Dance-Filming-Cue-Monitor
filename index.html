@@ -457,48 +457,6 @@
       text-decoration: line-through;
     }
 
-    /* Custom audio player */
-    .audio-player { display: grid; gap: 10px; }
-    .player-controls { display: flex; align-items: center; gap: 10px; }
-    .play-btn {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: var(--accent); color: #101418;
-      font-size: 22px; flex-shrink: 0;
-      display: grid; place-items: center; border: none; cursor: pointer;
-      transition: transform .12s;
-    }
-    .play-btn:active { transform: scale(.92); }
-    .player-time {
-      font-variant-numeric: tabular-nums; font-size: 13px;
-      color: var(--muted); flex-shrink: 0; min-width: 100px;
-    }
-    .progress-wrap {
-      position: relative; height: 36px; cursor: pointer;
-      display: flex; align-items: center;
-    }
-    .progress-track {
-      position: absolute; top: 50%; left: 0; right: 0; height: 6px;
-      transform: translateY(-50%);
-      background: rgba(255,255,255,.12); border-radius: 999px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent-2));
-      border-radius: 999px; transition: width .08s linear; min-width: 0;
-    }
-    .cue-marker {
-      position: absolute; top: 50%;
-      transform: translateX(-50%) translateY(-50%);
-      width: 3px; height: 16px;
-      background: rgba(66,211,165,.85); border-radius: 2px; pointer-events: none;
-    }
-    .cue-marker-label {
-      position: absolute; bottom: calc(50% + 11px);
-      transform: translateX(-50%); font-size: 9px;
-      color: var(--accent-2); white-space: nowrap; pointer-events: none; opacity: .75;
-      text-shadow: 0 1px 4px rgba(0,0,0,.6);
-    }
-
     /* Client count badge */
     .client-badge {
       display: inline-flex; align-items: center; gap: 5px;
@@ -583,21 +541,9 @@
         </div>
         <div style="padding: 10px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; display: grid; gap: 10px;">
           <input id="audioFile" type="file" accept=".mp3,.m4a,.aac,.wav,.flac,audio/*" aria-label="上传音乐" style="border: none; background: transparent; padding: 0;">
-          <audio id="audioPlayer" style="display:none;"></audio>
-          <div class="audio-player" id="audioPlayerUI" style="display:none;">
-            <div class="player-controls">
-              <button class="play-btn" id="playBtn" type="button">▶</button>
-              <span id="playerTime" class="player-time">00:00 / 00:00</span>
-            </div>
-            <div class="progress-wrap" id="progressWrap">
-              <div class="progress-track">
-                <div class="progress-fill" id="progressFill" style="width:0%"></div>
-              </div>
-            </div>
-          </div>
-          <p id="audioStatus" class="hint">请选择音乐文件</p>
+          <audio id="audioPlayer" controls style="width: 100%; margin-top: 8px;"></audio>
         </div>
-        <p class="hint">上传音乐后播放。拖拽进度条将实时无缝同步到所有摄影师的屏幕上。</p>
+        <p class="hint">上传音乐后播放。拖拽进度条将实时同步到所有摄影师的屏幕上。</p>
       </section>
 
       <section class="section">
@@ -905,54 +851,15 @@
     }
 
     const audioPlayer = $("#audioPlayer");
-    const progressFill = $("#progressFill");
-    const progressWrap = $("#progressWrap");
-    const playBtn = $("#playBtn");
-    const playerTime = $("#playerTime");
-    const audioStatus = $("#audioStatus");
-
-    function updateProgressBar() {
-      if (!audioPlayer.duration) return;
-      const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-      progressFill.style.width = pct + "%";
-      playerTime.textContent = formatTime(audioPlayer.currentTime) + " / " + formatTime(audioPlayer.duration);
-    }
-
-    function renderCueMarkers() {
-      // remove existing markers
-      progressWrap.querySelectorAll(".cue-marker, .cue-marker-label").forEach(el => el.remove());
-      if (!audioPlayer.duration) return;
-      state.cues.forEach(cue => {
-        const pct = (cue.time / audioPlayer.duration) * 100;
-        if (pct < 0 || pct > 100) return;
-        const marker = document.createElement("div");
-        marker.className = "cue-marker";
-        marker.style.left = pct + "%";
-        const label = document.createElement("div");
-        label.className = "cue-marker-label";
-        label.style.left = pct + "%";
-        label.textContent = cue.name;
-        progressWrap.appendChild(label);
-        progressWrap.appendChild(marker);
-      });
-    }
 
     $("#audioFile").addEventListener("change", event => {
       const file = event.target.files?.[0];
       if (!file) return;
       const url = URL.createObjectURL(file);
       audioPlayer.src = url;
-      audioStatus.textContent = "已加载：" + file.name;
-    });
-
-    audioPlayer.addEventListener("loadedmetadata", () => {
-      $("#audioPlayerUI").style.display = "";
-      updateProgressBar();
-      renderCueMarkers();
     });
 
     audioPlayer.addEventListener("timeupdate", () => {
-      updateProgressBar();
       if (state.role === "host" && state.running) {
         // keep internal timer in sync with actual audio playback
         state.startAt = performance.now() - audioPlayer.currentTime * 1000;
@@ -960,12 +867,10 @@
     });
 
     audioPlayer.addEventListener("play", () => {
-      playBtn.textContent = "⏸";
       syncTo(audioPlayer.currentTime, "播放中", true);
     });
 
     audioPlayer.addEventListener("pause", () => {
-      playBtn.textContent = "▶";
       state.running = false;
       state.pausedAt = audioPlayer.currentTime;
       $("#syncState").textContent = "已暂停";
@@ -983,33 +888,10 @@
     });
 
     audioPlayer.addEventListener("ended", () => {
-      playBtn.textContent = "▶";
       state.running = false;
       state.pausedAt = 0;
       broadcastState();
     });
-
-    playBtn.addEventListener("click", () => {
-      if (audioPlayer.paused) {
-        audioPlayer.play();
-      } else {
-        audioPlayer.pause();
-      }
-    });
-
-    progressWrap.addEventListener("click", e => {
-      if (!audioPlayer.duration) return;
-      const rect = progressWrap.getBoundingClientRect();
-      const pct = (e.clientX - rect.left) / rect.width;
-      audioPlayer.currentTime = pct * audioPlayer.duration;
-    });
-
-    // Re-render cue markers when cues change
-    const _origSaveCues = saveCues;
-    saveCues = function(broadcast = true) {
-      _origSaveCues(broadcast);
-      renderCueMarkers();
-    };
 
     $("#cueForm").addEventListener("submit", event => {
       event.preventDefault();
