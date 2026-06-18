@@ -923,7 +923,7 @@
         document.body.classList.add('role-client');
       }
       
-      socket = io();
+      socket = io({ transports: ['websocket'] });
       
       socket.on('connect', () => {
         syncTimeWithServer();
