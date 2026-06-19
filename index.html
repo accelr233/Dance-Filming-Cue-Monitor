@@ -145,9 +145,58 @@
     .cue-stage {
       align-self: center;
       display: grid;
-      gap: 10px;
+      gap: 8px;
       text-align: center;
     }
+
+    /* Now-playing bar inside hero */
+    .now-playing {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(66, 211, 165, .12);
+      border: 1px solid rgba(66, 211, 165, .3);
+      min-height: 36px;
+    }
+    .now-playing-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-2);
+      flex-shrink: 0;
+      box-shadow: 0 0 8px rgba(66, 211, 165, .7);
+      animation: nowDotPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes nowDotPulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .4; transform: scale(.7); }
+    }
+    .now-playing-text {
+      color: var(--accent-2);
+      font-size: clamp(14px, 3.5vw, 18px);
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .now-playing-shot {
+      color: rgba(66, 211, 165, .65);
+      font-size: clamp(12px, 2.5vw, 14px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .now-playing.idle {
+      background: rgba(255, 255, 255, .045);
+      border-color: rgba(255, 255, 255, .08);
+    }
+    .now-playing.idle .now-playing-dot {
+      background: var(--muted);
+      box-shadow: none;
+      animation: none;
+    }
+    .now-playing.idle .now-playing-text { color: var(--muted); }
 
     .label {
       color: var(--muted);
@@ -587,20 +636,27 @@
       </div>
 
       <div class="cue-stage">
+        <!-- Now playing row -->
+        <div class="now-playing idle" id="nowPlaying">
+          <span class="now-playing-dot"></span>
+          <span class="now-playing-text" id="nowPlayingName">未开始</span>
+          <span class="now-playing-shot" id="nowPlayingShot"></span>
+        </div>
+
         <div class="label">下一个</div>
         <div class="countdown" id="countdown">--.-</div>
         <h2 class="name" id="nextName">等待同步</h2>
-        <div class="shot" id="nextShot">手动同步，或上传音乐后启动自动同步</div>
+        <div class="shot" id="nextShot">上传音乐后开始播放</div>
       </div>
 
       <div class="now-next">
         <div class="mini-panel">
-          <span>现在</span>
-          <b id="nowCue">未开始</b>
-        </div>
-        <div class="mini-panel">
           <span>再下一个</span>
           <b id="afterCue">-</b>
+        </div>
+        <div class="mini-panel">
+          <span>已用时</span>
+          <b id="elapsedClock">未开始</b>
         </div>
       </div>
     </section>
@@ -793,8 +849,20 @@
       const time = currentTime();
       const { now, next, after } = getCueWindow(time);
       $("#clock").textContent = formatClock(time);
-      $("#nowCue").textContent = now ? now.name : "未开始";
       $("#afterCue").textContent = after ? `${formatTime(after.time)} ${after.name}` : "-";
+      $("#elapsedClock").textContent = state.running ? formatClock(time) : "未开始";
+
+      // Now-playing bar
+      const nowPlaying = $("#nowPlaying");
+      if (now && state.running) {
+        nowPlaying.classList.remove("idle");
+        $("#nowPlayingName").textContent = now.name;
+        $("#nowPlayingShot").textContent = now.shot ? `· ${now.shot}` : "";
+      } else {
+        nowPlaying.classList.add("idle");
+        $("#nowPlayingName").textContent = state.running ? "片头" : "未开始";
+        $("#nowPlayingShot").textContent = "";
+      }
 
       if (next) {
         const left = next.time - time;
@@ -808,10 +876,12 @@
         $("#nextShot").textContent = next.shot || formatTime(next.time);
       } else {
         $("#countdown").textContent = "END";
+        $("#countdown").classList.remove("urgent");
         $("#nextName").textContent = "提示结束";
         $("#nextShot").textContent = "可以停止拍摄或等待下一首";
       }
     }
+
 
     function renderList() {
       const time = currentTime();
