@@ -149,24 +149,40 @@
       text-align: center;
     }
 
-    /* Now-playing bar inside hero */
+    /* Now-playing block inside hero */
     .now-playing {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 7px 12px;
-      border-radius: 999px;
+      padding: 12px 16px;
+      border-radius: 12px;
       background: rgba(66, 211, 165, .12);
       border: 1px solid rgba(66, 211, 165, .3);
-      min-height: 36px;
+      display: grid;
+      gap: 4px;
+      text-align: left;
+    }
+    .now-playing-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
     }
     .now-playing-dot {
-      width: 8px; height: 8px; border-radius: 50%;
+      width: 9px; height: 9px; border-radius: 50%;
       background: var(--accent-2);
       flex-shrink: 0;
       box-shadow: 0 0 8px rgba(66, 211, 165, .7);
       animation: nowDotPulse 1.8s ease-in-out infinite;
+    }
+    .now-playing-label {
+      color: var(--accent-2);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 600;
+    }
+    .now-playing-elapsed {
+      margin-left: auto;
+      color: rgba(66, 211, 165, .6);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
     }
     @keyframes nowDotPulse {
       0%,100% { opacity: 1; transform: scale(1); }
@@ -174,15 +190,16 @@
     }
     .now-playing-text {
       color: var(--accent-2);
-      font-size: clamp(14px, 3.5vw, 18px);
-      font-weight: 700;
+      font-size: clamp(26px, 8vw, 48px);
+      font-weight: 800;
+      line-height: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .now-playing-shot {
       color: rgba(66, 211, 165, .65);
-      font-size: clamp(12px, 2.5vw, 14px);
+      font-size: clamp(13px, 3vw, 17px);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -196,7 +213,9 @@
       box-shadow: none;
       animation: none;
     }
+    .now-playing.idle .now-playing-label,
     .now-playing.idle .now-playing-text { color: var(--muted); }
+    .now-playing.idle .now-playing-elapsed { display: none; }
 
     .label {
       color: var(--muted);
@@ -636,11 +655,15 @@
       </div>
 
       <div class="cue-stage">
-        <!-- Now playing row -->
+        <!-- Now playing block -->
         <div class="now-playing idle" id="nowPlaying">
-          <span class="now-playing-dot"></span>
-          <span class="now-playing-text" id="nowPlayingName">未开始</span>
-          <span class="now-playing-shot" id="nowPlayingShot"></span>
+          <div class="now-playing-header">
+            <span class="now-playing-dot"></span>
+            <span class="now-playing-label">正在拍</span>
+            <span class="now-playing-elapsed" id="nowPlayingElapsed"></span>
+          </div>
+          <div class="now-playing-text" id="nowPlayingName">未开始</div>
+          <div class="now-playing-shot" id="nowPlayingShot"></div>
         </div>
 
         <div class="label">下一个</div>
@@ -677,9 +700,16 @@
         <div class="section-title">
           <h2>提示列表</h2>
           <div class="icon-row">
-            <button class="small-btn host-only" id="syncCuesBtn" type="button" title="手动同步 Cue 列表到所有 Client">↑同步</button>
+            <button class="small-btn host-only" id="syncCuesBtn" type="button" title="手动同步">↑同步</button>
             <button class="small-btn host-only" id="sortBtn" type="button">排序</button>
           </div>
+        </div>
+        <!-- Global time offset nudge (host only) -->
+        <div class="host-only nudge" id="timeOffsetRow" style="margin-bottom:2px;">
+          <button class="small-btn" data-offset="-2" type="button">-2s</button>
+          <button class="small-btn" data-offset="-1" type="button">-1s</button>
+          <button class="small-btn" data-offset="1" type="button">+1s</button>
+          <button class="small-btn" data-offset="2" type="button">+2s</button>
         </div>
         <div class="cue-list" id="cueList"></div>
       </section>
@@ -852,16 +882,19 @@
       $("#afterCue").textContent = after ? `${formatTime(after.time)} ${after.name}` : "-";
       $("#elapsedClock").textContent = state.running ? formatClock(time) : "未开始";
 
-      // Now-playing bar
+      // Now-playing block
       const nowPlaying = $("#nowPlaying");
       if (now && state.running) {
         nowPlaying.classList.remove("idle");
         $("#nowPlayingName").textContent = now.name;
-        $("#nowPlayingShot").textContent = now.shot ? `· ${now.shot}` : "";
+        $("#nowPlayingShot").textContent = now.shot || "";
+        const inCueSecs = Math.floor(time - now.time);
+        $("#nowPlayingElapsed").textContent = `已拍 ${inCueSecs}s`;
       } else {
         nowPlaying.classList.add("idle");
         $("#nowPlayingName").textContent = state.running ? "片头" : "未开始";
         $("#nowPlayingShot").textContent = "";
+        $("#nowPlayingElapsed").textContent = "";
       }
 
       if (next) {
@@ -881,7 +914,6 @@
         $("#nextShot").textContent = "可以停止拍摄或等待下一首";
       }
     }
-
 
     function renderList() {
       const time = currentTime();
@@ -935,18 +967,33 @@
         }
 
         if (state.role === 'host') {
+          // Tap to toggle done; double-tap to edit
+          let tapTimer = null;
+          item.addEventListener("click", () => {
+            if (tapTimer) return; // second tap of dblclick, ignore
+            tapTimer = setTimeout(() => {
+              tapTimer = null;
+              const wasDone = state.clientDone.has(cue.time);
+              if (wasDone) {
+                state.clientDone.delete(cue.time);
+              } else {
+                state.clientDone.add(cue.time);
+              }
+              if (socket) socket.emit('clientDone', { cueTime: cue.time, done: !wasDone });
+              state.lastListKey = "";
+              renderList();
+            }, 250);
+          });
           item.addEventListener("dblclick", () => {
+            if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
             const newTimeStr = prompt("修改时间 (格式: 秒数 或 分:秒)", formatTime(cue.time));
             if (newTimeStr === null) return;
             const newTime = parseTime(newTimeStr);
             if (Number.isNaN(newTime)) return alert("时间格式不正确");
-            
             const newName = prompt("修改要拍谁 (名称)", cue.name);
             if (newName === null) return;
-            
             const newShot = prompt("修改镜头说明", cue.shot || "");
             if (newShot === null) return;
-            
             cue.time = newTime;
             cue.name = newName.trim();
             cue.shot = newShot.trim();
@@ -955,7 +1002,7 @@
             renderList();
           });
           item.style.cursor = "pointer";
-          item.title = "双击修改内容";
+          item.title = "单击标记完成 / 双击修改内容";
         }
         
         cueList.appendChild(item);
@@ -965,12 +1012,10 @@
         }
       });
 
-      if (state.role === 'client' && state.running && activeItemNode) {
+      // Auto-scroll to active cue for both host and client
+      if (activeItemNode && state.running) {
         setTimeout(() => {
-          cueList.scrollTo({
-            top: activeItemNode.offsetTop - 10,
-            behavior: 'smooth'
-          });
+          cueList.scrollTo({ top: activeItemNode.offsetTop - 10, behavior: 'smooth' });
         }, 10);
       }
     }
@@ -1061,6 +1106,25 @@
       state.lastListKey = "";
       renderList();
     });
+
+    // Global time offset: shift all cues by N seconds
+    document.querySelectorAll("[data-offset]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const delta = Number(btn.dataset.offset);
+        state.cues = state.cues.map(cue => ({
+          ...cue,
+          time: Math.max(0, cue.time + delta)
+        }));
+        saveCues();
+        state.lastListKey = "";
+        renderList();
+        // Flash button feedback
+        const orig = btn.textContent;
+        btn.textContent = "✓";
+        setTimeout(() => btn.textContent = orig, 800);
+      });
+    });
+
 
     $("#loadBulkBtn").addEventListener("click", () => {
       const parsed = bulkText.value.split(/\r?\n/)
