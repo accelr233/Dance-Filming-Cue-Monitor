@@ -22,6 +22,7 @@ app.get('/ping', (req, res) => res.send('ok'));
 const roomCues = new Map();
 const roomState = new Map(); // Store latest play state (pausedAt, running, startAt)
 const roomSockets = new Map(); // room -> Set<socketId>
+const roomUsers = new Map();  // room -> Map<socketId, {name, role}>
 
 io.on('connection', (socket) => {
   // 1. Time Sync (NTP-like)
@@ -30,15 +31,21 @@ io.on('connection', (socket) => {
   });
 
   // 2. Room Management
-  socket.on('joinRoom', ({ room, role }) => {
+  socket.on('joinRoom', ({ room, role, name }) => {
     socket.join(room);
     socket.data.room = room;
     socket.data.role = role;
+    socket.data.name = name || (role === 'host' ? 'Host' : '摄影师');
 
     // Track connected sockets per room
     if (!roomSockets.has(room)) roomSockets.set(room, new Set());
     roomSockets.get(room).add(socket.id);
     io.to(room).emit('clientCount', roomSockets.get(room).size);
+
+    // Track users with names
+    if (!roomUsers.has(room)) roomUsers.set(room, new Map());
+    roomUsers.get(room).set(socket.id, { name: socket.data.name, role });
+    io.to(room).emit('userList', Array.from(roomUsers.get(room).values()));
 
     // Send current state to newly joined client
     if (roomCues.has(room)) socket.emit('syncCues', roomCues.get(room));
@@ -76,9 +83,15 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const room = socket.data.room;
-    if (room && roomSockets.has(room)) {
-      roomSockets.get(room).delete(socket.id);
-      io.to(room).emit('clientCount', roomSockets.get(room).size);
+    if (room) {
+      if (roomSockets.has(room)) {
+        roomSockets.get(room).delete(socket.id);
+        io.to(room).emit('clientCount', roomSockets.get(room).size);
+      }
+      if (roomUsers.has(room)) {
+        roomUsers.get(room).delete(socket.id);
+        io.to(room).emit('userList', Array.from(roomUsers.get(room).values()));
+      }
     }
   });
 

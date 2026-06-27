@@ -623,12 +623,45 @@
       background: rgba(66,211,165,.18); color: var(--accent-2);
       border: 1px solid rgba(66,211,165,.3);
     }
+
+    /* Online users list */
+    .online-list {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .online-user {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; border-radius: 8px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      font-size: 13px;
+    }
+    .online-user-dot {
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .online-user-dot.host { background: var(--accent); box-shadow: 0 0 5px rgba(255,204,77,.5); }
+    .online-user-dot.client { background: var(--accent-2); box-shadow: 0 0 5px rgba(66,211,165,.5); }
+    .online-user-name { font-weight: 600; flex: 1; }
+    .online-user-role { color: var(--muted); font-size: 11px; }
+
+    /* Video player */
+    #mediaPlayer {
+      width: 100%; border-radius: 8px; background: #000;
+      display: none; max-height: 240px; object-fit: contain;
+    }
+    #mediaPlayer.is-audio { max-height: 44px; background: transparent; }
+
+    /* Lobby name input */
+    .lobby-fields { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .lobby-fields input { width: 200px; }
   </style>
 </head>
 <body>
   <div id="lobby" class="lobby">
     <h1>舞蹈跟拍监视器</h1>
-    <input type="text" id="roomCode" placeholder="房间号" maxlength="4">
+    <div class="lobby-fields">
+      <input type="text" id="userName" placeholder="你的名字" maxlength="12" autocomplete="off">
+      <input type="text" id="roomCode" placeholder="房间号" maxlength="4" autocomplete="off">
+    </div>
     <div class="role-buttons">
       <button id="joinHostBtn" class="primary">我是控制端 (Host)</button>
       <button id="joinClientBtn" class="secondary">我是摄影师 (Client)</button>
@@ -690,10 +723,10 @@
           <h2>音乐控制</h2>
         </div>
         <div style="padding: 10px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; display: grid; gap: 10px;">
-          <input id="audioFile" type="file" accept=".mp3,.m4a,.aac,.wav,.flac,audio/*" aria-label="上传音乐" style="border: none; background: transparent; padding: 0;">
-          <audio id="audioPlayer" controls loop style="width:100%; margin-top:4px;"></audio>
+          <input id="audioFile" type="file" accept=".mp3,.m4a,.aac,.wav,.flac,.mp4,.mov,.m4v,audio/*,video/*" aria-label="上传音频/视频" style="border: none; background: transparent; padding: 0;">
+          <video id="audioPlayer" id="mediaPlayer" controls loop style="width:100%; border-radius:6px; margin-top:4px; display:none;"></video>
         </div>
-        <p class="hint">上传音乐后播放。播放、暂停、拖动进度条实时同步到所有摄影师。歌曲结束后自动单曲循环。</p>
+        <p class="hint">支持音频（MP3/WAV等）和视频（MP4）。播放、暂停、拖动进度条实时同步到所有摄影师。</p>
       </section>
 
       <section class="section">
@@ -712,6 +745,15 @@
           <button class="small-btn" data-offset="2" type="button">+2s</button>
         </div>
         <div class="cue-list" id="cueList"></div>
+      </section>
+
+      <!-- Online users panel (visible to all) -->
+      <section class="section" id="onlineSection">
+        <div class="section-title">
+          <h2>在线成员</h2>
+          <span class="pill" style="font-size:12px;" id="onlineCount">0 人</span>
+        </div>
+        <div class="online-list" id="onlineList"><p class="hint">连接后显示</p></div>
       </section>
 
       <section class="section host-only">
@@ -967,21 +1009,22 @@
         }
 
         if (state.role === 'host') {
-          // Tap to toggle done; double-tap to edit
+          // Single tap = seek player to cue time; double-tap = edit
           let tapTimer = null;
           item.addEventListener("click", () => {
-            if (tapTimer) return; // second tap of dblclick, ignore
+            if (tapTimer) return;
             tapTimer = setTimeout(() => {
               tapTimer = null;
-              const wasDone = state.clientDone.has(cue.time);
-              if (wasDone) {
-                state.clientDone.delete(cue.time);
-              } else {
-                state.clientDone.add(cue.time);
+              const player = $("#audioPlayer");
+              if (player && player.src) {
+                player.currentTime = cue.time;
+                // If paused, keep paused but update sync state
+                if (player.paused) {
+                  state.pausedAt = cue.time;
+                  broadcastState();
+                  renderHero();
+                }
               }
-              if (socket) socket.emit('clientDone', { cueTime: cue.time, done: !wasDone });
-              state.lastListKey = "";
-              renderList();
             }, 250);
           });
           item.addEventListener("dblclick", () => {
@@ -1002,7 +1045,7 @@
             renderList();
           });
           item.style.cursor = "pointer";
-          item.title = "单击标记完成 / 双击修改内容";
+          item.title = "单击跳转 / 双击修改";
         }
         
         cueList.appendChild(item);
@@ -1041,6 +1084,17 @@
     $("#audioFile").addEventListener("change", event => {
       const file = event.target.files?.[0];
       if (!file) return;
+      const isVideo = file.type.startsWith('video/');
+      audioPlayer.style.display = 'block';
+      if (isVideo) {
+        audioPlayer.style.maxHeight = '240px';
+        audioPlayer.style.background = '#000';
+        audioPlayer.style.objectFit = 'contain';
+      } else {
+        audioPlayer.style.maxHeight = '44px';
+        audioPlayer.style.background = 'transparent';
+        audioPlayer.style.objectFit = '';
+      }
       audioPlayer.src = URL.createObjectURL(file);
     });
 
@@ -1183,8 +1237,10 @@
 
     function joinRoom(role) {
       const room = $("#roomCode").value.trim() || "0000";
+      const name = $("#userName").value.trim() || (role === 'host' ? 'Host' : '摄影师');
       state.role = role;
       state.room = room;
+      state.name = name;
       
       if (role === 'client') {
         document.body.classList.add('role-client');
@@ -1195,7 +1251,7 @@
       socket.on('connect', () => {
         syncTimeWithServer();
         setInterval(syncTimeWithServer, 30000);
-        socket.emit('joinRoom', { room, role });
+        socket.emit('joinRoom', { room, role, name });
         // Host: push the local cue list to server right after joining
         if (role === 'host') {
           setTimeout(() => socket.emit('updateCues', state.cues), 200);
@@ -1240,6 +1296,23 @@
         const cur = state.clientDones.get(cueTime) || 0;
         state.clientDones.set(cueTime, done ? cur + 1 : Math.max(0, cur - 1));
         state.lastListKey = "";
+      });
+
+      // Online users list
+      socket.on('userList', (users) => {
+        const list = $("#onlineList");
+        $("#onlineCount").textContent = users.length + ' 人';
+        list.innerHTML = '';
+        users.forEach(u => {
+          const div = document.createElement('div');
+          div.className = 'online-user';
+          div.innerHTML = `
+            <span class="online-user-dot ${u.role}"></span>
+            <span class="online-user-name">${escapeHtml(u.name)}</span>
+            <span class="online-user-role">${u.role === 'host' ? '控制端' : '摄影师'}</span>
+          `;
+          list.appendChild(div);
+        });
       });
       
       $("#lobby").style.display = "none";
