@@ -724,7 +724,7 @@
         </div>
         <div style="padding: 10px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; display: grid; gap: 10px;">
           <input id="audioFile" type="file" accept=".mp3,.m4a,.aac,.wav,.flac,.mp4,.mov,.m4v,audio/*,video/*" aria-label="上传音频/视频" style="border: none; background: transparent; padding: 0;">
-          <video id="audioPlayer" id="mediaPlayer" controls loop style="width:100%; border-radius:6px; margin-top:4px; display:none;"></video>
+          <video id="audioPlayer" id="mediaPlayer" controls loop playsinline webkit-playsinline style="width:100%; border-radius:6px; margin-top:4px; display:none;"></video>
         </div>
         <p class="hint">支持音频（MP3/WAV等）和视频（MP4）。播放、暂停、拖动进度条实时同步到所有摄影师。</p>
       </section>
