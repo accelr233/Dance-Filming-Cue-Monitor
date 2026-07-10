@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>提示词制作 — Dance Filming Cue Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e1117;
+      --surface: #161b22;
+      --border: rgba(255,255,255,.09);
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #ffcc4d;
+      --accent-2: #42d3a5;
+      --danger: #ff6b6b;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      overscroll-behavior: none;
+    }
+
+    /* ── Layout ── */
+    .page { max-width: 560px; margin: 0 auto; padding: 0 16px 40px; }
+
+    /* ── Topbar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+    .back-btn {
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .back-btn:hover { background: rgba(255,255,255,.12); }
+    .topbar h1 { font-size: 18px; font-weight: 800; flex: 1; }
+    .step-pill {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255,204,77,.15);
+      color: var(--accent);
+      border: 1px solid rgba(255,204,77,.3);
+      white-space: nowrap;
+    }
+
+    /* ── Upload zone ── */
+    .upload-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 36px 20px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      text-align: center;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent-2);
+      background: rgba(66,211,165,.05);
+    }
+    .upload-icon { font-size: 36px; }
+    .upload-zone p { color: var(--muted); font-size: 14px; }
+    .upload-zone input { display: none; }
+
+    /* ── Video player ── */
+    #videoPlayer {
+      width: 100%;
+      border-radius: 12px;
+      background: #000;
+      max-height: 320px;
+      object-fit: contain;
+      display: none;
+    }
+    .video-time-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0 4px;
+    }
+    .video-time-bar .time-display {
+      font-variant-numeric: tabular-nums;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 70px;
+    }
+    .playing-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 8px rgba(66,211,165,.6);
+      animation: dotBlink 1s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:.2} }
+    .playing-dot.paused { animation: none; opacity: .3; background: var(--muted); box-shadow: none; }
+
+    /* ── Main action button ── */
+    .action-btn {
+      width: 100%;
+      height: 72px;
+      border-radius: 16px;
+      font-size: 20px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform .1s, box-shadow .1s;
+    }
+    .action-btn:active { transform: scale(.97); }
+    .action-btn.pause-record {
+      background: linear-gradient(135deg, var(--accent), #e6b800);
+      color: #101418;
+      box-shadow: 0 6px 24px rgba(255,204,77,.3);
+    }
+    .action-btn.resume {
+      background: linear-gradient(135deg, var(--accent-2), #27b589);
+      color: #101418;
+      box-shadow: 0 6px 24px rgba(66,211,165,.3);
+    }
+    .action-btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Cue form card ── */
+    .cue-form-card {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      gap: 14px;
+      flex-direction: column;
+    }
+    .cue-form-card.visible { display: flex; }
+
+    .cue-time-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .cue-time-badge strong {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    label.field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      display: block;
+      margin-bottom: 6px;
+    }
+    input.text-input, textarea.text-output {
+      width: 100%;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input.text-input:focus, textarea.text-output:focus {
+      border-color: var(--accent-2);
+    }
+
+    /* Position chips */
+    .pos-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .pos-chip {
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .pos-chip:hover { border-color: var(--accent-2); color: var(--accent-2); }
+    .pos-chip.active {
+      background: rgba(66,211,165,.18);
+      border-color: var(--accent-2);
+      color: var(--accent-2);
+    }
+
+    /* Cue form action row */
+    .form-actions {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 10px;
+    }
+    .btn-skip {
+      height: 50px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-skip:hover { background: rgba(255,255,255,.1); color: var(--text); }
+    .btn-add {
+      height: 50px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent-2);
+      color: #101418;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .1s;
+    }
+    .btn-add:active { transform: scale(.97); }
+    .btn-add:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+    /* ── Output section ── */
+    .output-section { display: none; flex-direction: column; gap: 10px; }
+    .output-section.has-items { display: flex; }
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .output-header h2 { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .btn-copy {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-copy:hover { background: rgba(255,255,255,.1); }
+    .btn-clear {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,107,107,.3);
+      background: rgba(255,107,107,.07);
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    textarea.text-output {
+      min-height: 140px;
+      resize: vertical;
+      font-size: 13px;
+      line-height: 1.7;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .cue-count {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Hint ── */
+    .hint { font-size: 13px; color: var(--muted); }
+
+    /* Section gap */
+    .stack { display: flex; flex-direction: column; gap: 14px; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <a href="/" class="back-btn">← 返回</a>
+    <h1>提示词制作</h1>
+    <span class="step-pill" id="stepPill">第一步：上传视频</span>
+  </div>
+
+  <div class="stack">
+    <!-- Upload -->
+    <div class="upload-zone" id="uploadZone">
+      <span class="upload-icon">🎬</span>
+      <strong>点击上传视频或音频</strong>
+      <p>支持 MP4 / MOV / MP3 / WAV 等格式</p>
+      <input type="file" id="fileInput" accept=".mp4,.mov,.m4v,.mp3,.m4a,.aac,.wav,.flac,video/*,audio/*">
+    </div>
+
+    <!-- Video player -->
+    <video id="videoPlayer" controls playsinline webkit-playsinline loop></video>
+
+    <!-- Time bar -->
+    <div class="video-time-bar" id="videoTimeBar">
+      <span class="playing-dot" id="playingDot"></span>
+      <span class="time-display" id="currentTimeDisplay">00:00</span>
+      <span class="hint" id="totalTimeDisplay">/ --:--</span>
+    </div>
+
+    <!-- Main action button -->
+    <button class="action-btn pause-record" id="mainActionBtn" disabled>
+      <span>⏸</span> 暂停并记录时间
+    </button>
+
+    <!-- Cue form card -->
+    <div class="cue-form-card" id="cueFormCard">
+      <div class="cue-time-badge">
+        <span>📍 记录时间：</span>
+        <strong id="markedTime">00:00</strong>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <label class="field-label" for="nameInput">要拍谁</label>
+        <input type="text" class="text-input" id="nameInput" placeholder="例：小林 / A组 / 全员" autocomplete="off">
+      </div>
+
+      <div>
+        <label class="field-label">拍摄方位</label>
+        <div class="pos-chips" id="posChips">
+          <button class="pos-chip" data-val="左侧">左</button>
+          <button class="pos-chip" data-val="中间">中</button>
+          <button class="pos-chip" data-val="右侧">右</button>
+          <button class="pos-chip" data-val="全景">全景</button>
+          <button class="pos-chip" data-val="特写">特写</button>
+          <button class="pos-chip" data-val="跟拍">跟拍</button>
+        </div>
+        <input type="text" class="text-input" id="shotInput" placeholder="或直接输入：左侧中景、右侧特写…" autocomplete="off">
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-skip" id="skipBtn">跳过</button>
+        <button class="btn-add" id="addCueBtn">✓ 添加这条</button>
+      </div>
+    </div>
+
+    <!-- Resume button (shown after adding/skipping) -->
+    <button class="action-btn resume" id="resumeBtn" style="display:none;">
+      <span>▶</span> 继续播放
+    </button>
+
+    <hr class="divider">
+
+    <!-- Output -->
+    <div class="output-section" id="outputSection">
+      <div class="output-header">
+        <h2>生成的提示词 <span class="cue-count" id="cueCountLabel"></span></h2>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-clear" id="clearBtn">清空</button>
+          <button class="btn-copy" id="copyBtn">复制全部</button>
+        </div>
+      </div>
+      <textarea class="text-output" id="outputArea" readonly placeholder="添加提示词后显示在这里…"></textarea>
+      <p class="hint">复制后可粘贴到监控界面的「批量编辑」框中直接导入。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const video = document.getElementById('videoPlayer');
+  const fileInput = document.getElementById('fileInput');
+  const uploadZone = document.getElementById('uploadZone');
+  const mainActionBtn = document.getElementById('mainActionBtn');
+  const resumeBtn = document.getElementById('resumeBtn');
+  const cueFormCard = document.getElementById('cueFormCard');
+  const markedTimeEl = document.getElementById('markedTime');
+  const nameInput = document.getElementById('nameInput');
+  const shotInput = document.getElementById('shotInput');
+  const addCueBtn = document.getElementById('addCueBtn');
+  const skipBtn = document.getElementById('skipBtn');
+  const outputSection = document.getElementById('outputSection');
+  const outputArea = document.getElementById('outputArea');
+  const copyBtn = document.getElementById('copyBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const videoTimeBar = document.getElementById('videoTimeBar');
+  const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+  const totalTimeDisplay = document.getElementById('totalTimeDisplay');
+  const playingDot = document.getElementById('playingDot');
+  const stepPill = document.getElementById('stepPill');
+  const cueCountLabel = document.getElementById('cueCountLabel');
+
+  let cues = [];
+  let markedTime = 0;
+
+  // ── Helpers ──────────────────────────────────
+  function fmt(s) {
+    const safe = Math.max(0, s);
+    const m = Math.floor(safe / 60);
+    const sec = Math.floor(safe % 60);
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  // ── File upload ───────────────────────────────
+  function loadFile(file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    video.src = url;
+    video.style.display = 'block';
+    uploadZone.style.display = 'none';
+    videoTimeBar.style.display = 'flex';
+    mainActionBtn.disabled = false;
+    stepPill.textContent = '第二步：播放并标记';
+  }
+
+  uploadZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => loadFile(e.target.files?.[0]));
+
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    loadFile(e.dataTransfer.files?.[0]);
+  });
+
+  // ── Time display ──────────────────────────────
+  video.addEventListener('loadedmetadata', () => {
+    totalTimeDisplay.textContent = `/ ${fmt(video.duration)}`;
+  });
+
+  video.addEventListener('timeupdate', () => {
+    currentTimeDisplay.textContent = fmt(video.currentTime);
+  });
+
+  video.addEventListener('play', () => {
+    playingDot.classList.remove('paused');
+  });
+  video.addEventListener('pause', () => {
+    playingDot.classList.add('paused');
+  });
+
+  // ── State machine ─────────────────────────────
+  // States: idle (playing) | marked (paused, form showing) | saved (form done, resume btn)
+  function enterMarkedState() {
+    video.pause();
+    markedTime = video.currentTime;
+    markedTimeEl.textContent = fmt(markedTime);
+    // Clear form
+    nameInput.value = '';
+    shotInput.value = '';
+    document.querySelectorAll('.pos-chip').forEach(c => c.classList.remove('active'));
+    // Show form
+    cueFormCard.classList.add('visible');
+    mainActionBtn.style.display = 'none';
+    resumeBtn.style.display = 'none';
+    nameInput.focus();
+    stepPill.textContent = '第三步：填写提示词';
+  }
+
+  function enterSavedState() {
+    cueFormCard.classList.remove('visible');
+    resumeBtn.style.display = 'flex';
+    mainActionBtn.style.display = 'none';
+    stepPill.textContent = '已添加，继续播放？';
+  }
+
+  function enterIdleState() {
+    cueFormCard.classList.remove('visible');
+    resumeBtn.style.display = 'none';
+    mainActionBtn.style.display = 'flex';
+    video.play();
+    stepPill.textContent = '第二步：播放并标记';
+  }
+
+  mainActionBtn.addEventListener('click', enterMarkedState);
+  resumeBtn.addEventListener('click', enterIdleState);
+
+  skipBtn.addEventListener('click', () => {
+    enterSavedState();
+    // Don't add cue, just resume flow
+    cueFormCard.classList.remove('visible');
+    resumeBtn.style.display = 'flex';
+    mainActionBtn.style.display = 'none';
+    stepPill.textContent = '已跳过，继续？';
+  });
+
+  // ── Position chips ────────────────────────────
+  document.querySelectorAll('.pos-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.pos-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const existing = shotInput.value.trim();
+      // If existing text isn't a chip value, append; otherwise replace
+      const chipVals = ['左侧','中间','右侧','全景','特写','跟拍'];
+      const startsWithChip = chipVals.some(v => existing.startsWith(v));
+      if (!existing || startsWithChip) {
+        shotInput.value = chip.dataset.val;
+      } else {
+        shotInput.value = chip.dataset.val + existing.replace(new RegExp('^(' + chipVals.join('|') + ')'), '');
+      }
+    });
+  });
+
+  shotInput.addEventListener('input', () => {
+    // deactivate chips if user types freely
+    const val = shotInput.value;
+    const chipVals = ['左侧','中间','右侧','全景','特写','跟拍'];
+    document.querySelectorAll('.pos-chip').forEach(chip => {
+      chip.classList.toggle('active', val === chip.dataset.val);
+    });
+  });
+
+  // ── Add cue ───────────────────────────────────
+  addCueBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); nameInput.style.borderColor = 'var(--danger)'; return; }
+    nameInput.style.borderColor = '';
+    const shot = shotInput.value.trim();
+    const line = `${fmt(markedTime)}, ${name}${shot ? ', ' + shot : ''}`;
+    cues.push({ time: markedTime, line });
+    cues.sort((a, b) => a.time - b.time);
+    updateOutput();
+    enterSavedState();
+  });
+
+  nameInput.addEventListener('input', () => { nameInput.style.borderColor = ''; });
+
+  // ── Keyboard shortcut: Space to pause/mark ────
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      if (mainActionBtn.style.display !== 'none' && !mainActionBtn.disabled) {
+        enterMarkedState();
+      } else if (resumeBtn.style.display !== 'none') {
+        enterIdleState();
+      }
+    }
+    if (e.code === 'Enter' && document.activeElement === nameInput) {
+      addCueBtn.click();
+    }
+  });
+
+  // ── Output ────────────────────────────────────
+  function updateOutput() {
+    const text = cues.map(c => c.line).join('\n');
+    outputArea.value = text;
+    outputSection.classList.toggle('has-items', cues.length > 0);
+    cueCountLabel.textContent = `（${cues.length} 条）`;
+  }
+
+  copyBtn.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(outputArea.value).catch(() => {});
+    copyBtn.textContent = '✓ 已复制';
+    setTimeout(() => copyBtn.textContent = '复制全部', 1500);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if (!cues.length || confirm('确定清空所有提示词？')) {
+      cues = [];
+      updateOutput();
+    }
+  });
+
+  // Initial state
+  mainActionBtn.style.display = 'flex';
+  resumeBtn.style.display = 'none';
+</script>
+</body>
+</html>

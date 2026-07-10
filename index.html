@@ -653,6 +653,25 @@
     /* Lobby name input */
     .lobby-fields { display: flex; flex-direction: column; gap: 10px; align-items: center; }
     .lobby-fields input { width: 200px; }
+
+    /* Maker link */
+    .maker-link {
+      display: inline-flex; align-items: center; gap: 7px;
+      margin-top: 10px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: 1px dashed rgba(66,211,165,.4);
+      background: rgba(66,211,165,.07);
+      color: var(--accent-2);
+      font-size: 14px; font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .maker-link:hover {
+      background: rgba(66,211,165,.14);
+      border-color: rgba(66,211,165,.7);
+    }
   </style>
 </head>
 <body>
@@ -666,6 +685,7 @@
       <button id="joinHostBtn" class="primary">我是控制端 (Host)</button>
       <button id="joinClientBtn" class="secondary">我是摄影师 (Client)</button>
     </div>
+    <a href="/maker.html" class="maker-link">🎬 制作提示词</a>
   </div>
 
   <main class="app" id="app" style="display: none;">
