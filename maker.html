@@ -543,6 +543,20 @@ function renderNameChips() {
   updateNameSummary();
 }
 
+function makeChip(label, extraClass, selectionSet) {
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = `chip ${extraClass}${selectionSet.has(label) ? ' active' : ''}`;
+  chip.textContent = label;
+  chip.addEventListener('click', () => {
+    if (selectionSet.has(label)) selectionSet.delete(label);
+    else selectionSet.add(label);
+    chip.classList.toggle('active', selectionSet.has(label));
+    updateNameSummary();
+  });
+  return chip;
+}
+
 // Tip chips — clicking toggles chip text in the editable input box
 function renderTipChips() {
   const tipInput = $('tipInput');
