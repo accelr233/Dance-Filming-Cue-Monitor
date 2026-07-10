@@ -306,7 +306,7 @@
       <div>
         <label class="field-label">拍摄提示</label>
         <div class="chips" id="tipChips" style="margin-bottom:10px;"></div>
-        <div class="selection-summary" id="tipSummary">未选择（可不填）</div>
+        <input type="text" class="text-input" id="tipInput" placeholder="可不填，或直接输入自定义内容" autocomplete="off" style="margin-top:2px;">
       </div>
 
       <div class="form-actions">
@@ -543,65 +543,53 @@ function renderNameChips() {
   updateNameSummary();
 }
 
-// Tip chips
+// Tip chips — clicking toggles chip text in the editable input box
 function renderTipChips() {
+  const tipInput = $('tipInput');
   tipChips.innerHTML = '';
   tipPresets.forEach(tip => {
-    const chip = makeChip(tip, 'tip-chip', selectedTips);
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip tip-chip';
+    chip.textContent = tip;
+    // Reflect current input state
+    chip.classList.toggle('active', isInInput(tipInput, tip));
+    chip.addEventListener('click', () => {
+      toggleInInput(tipInput, tip);
+      chip.classList.toggle('active', isInInput(tipInput, tip));
+    });
     tipChips.appendChild(chip);
   });
-  // Custom add button
-  const addChip = document.createElement('button');
-  addChip.type = 'button';
-  addChip.className = 'chip add-chip';
-  addChip.textContent = '＋ 自定义';
-  addChip.addEventListener('click', () => {
-    const val = prompt('输入自定义拍摄提示：');
-    if (val && val.trim()) {
-      tipPresets.push(val.trim());
-      selectedTips.add(val.trim());
-      renderTipChips();
-      updateTipSummary();
-    }
+  // Sync chip active states when user types
+  tipInput.addEventListener('input', () => {
+    tipChips.querySelectorAll('.tip-chip').forEach((chip, i) => {
+      chip.classList.toggle('active', isInInput(tipInput, tipPresets[i]));
+    });
   });
-  tipChips.appendChild(addChip);
-  updateTipSummary();
 }
 
-function makeChip(label, extraClass, selectionSet) {
-  const chip = document.createElement('button');
-  chip.type = 'button';
-  chip.className = `chip ${extraClass}${selectionSet.has(label) ? ' active' : ''}`;
-  chip.textContent = label;
-  chip.addEventListener('click', () => {
-    if (selectionSet.has(label)) selectionSet.delete(label);
-    else selectionSet.add(label);
-    chip.classList.toggle('active', selectionSet.has(label));
-    if (extraClass === 'name-chip') updateNameSummary();
-    else updateTipSummary();
-  });
-  return chip;
+// Check if a word is present in the comma/、separated input
+function isInInput(input, val) {
+  return input.value.split(/[,、]+/).map(s => s.trim()).includes(val);
+}
+
+// Toggle a value in the input (append or remove)
+function toggleInInput(input, val) {
+  const parts = input.value.split(/[、]+/).map(s => s.trim()).filter(Boolean);
+  const idx = parts.indexOf(val);
+  if (idx >= 0) parts.splice(idx, 1);
+  else parts.push(val);
+  input.value = parts.join('、');
 }
 
 function updateNameSummary() {
-  const arr = dancers.filter(n => selectedNames.has(n)); // preserve order
+  const arr = dancers.filter(n => selectedNames.has(n));
   if (!arr.length) {
     nameSummary.textContent = '未选择';
     nameSummary.className = 'selection-summary';
   } else {
     nameSummary.textContent = arr.join('、');
     nameSummary.className = 'selection-summary has-value';
-  }
-}
-
-function updateTipSummary() {
-  const arr = tipPresets.filter(t => selectedTips.has(t));
-  if (!arr.length) {
-    tipSummary.textContent = '未选择（可不填）';
-    tipSummary.className = 'selection-summary';
-  } else {
-    tipSummary.textContent = arr.join('、');
-    tipSummary.className = 'selection-summary has-value';
   }
 }
 
@@ -612,8 +600,8 @@ function enterMarkState() {
   markedTimeEl.textContent = fmt(markedTime);
   // Reset selections
   selectedNames.clear();
-  selectedTips.clear();
   nameError.textContent = '';
+  $('tipInput').value = '';
   renderNameChips();
   renderTipChips();
   // Show form
@@ -649,9 +637,8 @@ addBtn.addEventListener('click', () => {
   }
   nameError.textContent = '';
 
-  const tipArr = tipPresets.filter(t => selectedTips.has(t));
   const namePart = nameArr.join('、');
-  const tipPart = tipArr.join('、');
+  const tipPart = $('tipInput').value.trim();
   const line = `${fmt(markedTime)}, ${namePart}${tipPart ? ', ' + tipPart : ''}`;
 
   cues.push({ time: markedTime, line });
