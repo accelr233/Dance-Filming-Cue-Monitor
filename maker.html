@@ -10,318 +10,211 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0e1117;
-      --surface: #161b22;
-      --border: rgba(255,255,255,.09);
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --accent: #ffcc4d;
-      --accent-2: #42d3a5;
-      --danger: #ff6b6b;
+      --bg: #0e1117; --surface: #161b22; --border: rgba(255,255,255,.09);
+      --text: #e6edf3; --muted: #8b949e;
+      --accent: #ffcc4d; --accent-2: #42d3a5; --danger: #ff6b6b;
     }
+    html, body { height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.5;
+      overscroll-behavior: none; }
 
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', system-ui, sans-serif;
-      font-size: 16px;
-      line-height: 1.5;
-      overscroll-behavior: none;
-    }
+    .page { max-width: 560px; margin: 0 auto; padding: 0 16px 60px; }
 
-    /* ── Layout ── */
-    .page { max-width: 560px; margin: 0 auto; padding: 0 16px 40px; }
-
-    /* ── Topbar ── */
+    /* Topbar */
     .topbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 0 12px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
-      position: sticky;
-      top: 0;
-      background: var(--bg);
-      z-index: 10;
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 0 12px; border-bottom: 1px solid var(--border);
+      margin-bottom: 20px; position: sticky; top: 0;
+      background: var(--bg); z-index: 10;
     }
     .back-btn {
-      background: rgba(255,255,255,.07);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
+      background: rgba(255,255,255,.07); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 8px 14px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
     }
     .back-btn:hover { background: rgba(255,255,255,.12); }
     .topbar h1 { font-size: 18px; font-weight: 800; flex: 1; }
     .step-pill {
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(255,204,77,.15);
-      color: var(--accent);
-      border: 1px solid rgba(255,204,77,.3);
-      white-space: nowrap;
+      font-size: 12px; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,204,77,.15); color: var(--accent);
+      border: 1px solid rgba(255,204,77,.3); white-space: nowrap;
     }
 
-    /* ── Upload zone ── */
-    .upload-zone {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      border: 2px dashed var(--border);
-      border-radius: 14px;
-      padding: 36px 20px;
-      cursor: pointer;
-      transition: border-color .2s, background .2s;
-      text-align: center;
-    }
-    .upload-zone:hover, .upload-zone.dragover {
-      border-color: var(--accent-2);
-      background: rgba(66,211,165,.05);
-    }
-    .upload-icon { font-size: 36px; }
-    .upload-zone p { color: var(--muted); font-size: 14px; }
-    .upload-zone input { display: none; }
+    /* Sections */
+    .phase { display: none; flex-direction: column; gap: 16px; }
+    .phase.active { display: flex; }
 
-    /* ── Video player ── */
-    #videoPlayer {
-      width: 100%;
-      border-radius: 12px;
-      background: #000;
-      max-height: 320px;
-      object-fit: contain;
-      display: none;
+    /* Cards */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px;
     }
-    .video-time-bar {
-      display: none;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 0 4px;
+    .card-title {
+      font-size: 14px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px;
     }
-    .video-time-bar .time-display {
-      font-variant-numeric: tabular-nums;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--accent);
-      min-width: 70px;
-    }
-    .playing-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent-2);
-      box-shadow: 0 0 8px rgba(66,211,165,.6);
-      animation: dotBlink 1s ease-in-out infinite;
-      flex-shrink: 0;
-    }
-    @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:.2} }
-    .playing-dot.paused { animation: none; opacity: .3; background: var(--muted); box-shadow: none; }
 
-    /* ── Main action button ── */
+    /* Inputs */
+    label.field-label {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      display: block; margin-bottom: 6px;
+    }
+    input.text-input, textarea.text-output {
+      width: 100%; background: rgba(255,255,255,.05); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: inherit;
+      font-size: 15px; padding: 10px 12px; outline: none; transition: border-color .15s;
+    }
+    input.text-input:focus, textarea.text-output:focus { border-color: var(--accent-2); }
+    input.text-input.error { border-color: var(--danger); }
+
+    /* Number stepper */
+    .stepper { display: flex; align-items: center; gap: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); width: fit-content; }
+    .stepper-btn {
+      width: 44px; height: 44px; background: rgba(255,255,255,.06);
+      border: none; color: var(--text); font-size: 22px; font-weight: 700;
+      cursor: pointer; display: grid; place-items: center; transition: background .15s;
+    }
+    .stepper-btn:hover { background: rgba(255,255,255,.13); }
+    .stepper-val {
+      width: 52px; text-align: center; font-size: 20px; font-weight: 800;
+      color: var(--accent); background: transparent; border: none;
+      font-family: inherit; padding: 0;
+    }
+
+    /* Dancer name grid */
+    .dancer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    .dancer-name-wrap { position: relative; }
+    .dancer-index {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      font-size: 11px; color: var(--muted); pointer-events: none;
+    }
+    .dancer-name-input {
+      padding-left: 28px !important;
+    }
+
+    /* Chip groups (multi-select) */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 8px 14px; border-radius: 999px;
+      border: 1px solid var(--border); background: rgba(255,255,255,.05);
+      color: var(--text); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all .15s; user-select: none;
+    }
+    .chip:hover { border-color: rgba(255,255,255,.25); }
+    .chip.active {
+      background: rgba(66,211,165,.18); border-color: var(--accent-2); color: var(--accent-2);
+    }
+    .chip.name-chip.active {
+      background: rgba(255,204,77,.15); border-color: var(--accent); color: var(--accent);
+    }
+    .chip.add-chip {
+      border-style: dashed; color: var(--muted); font-size: 13px;
+    }
+    .chip.add-chip:hover { border-color: var(--accent-2); color: var(--accent-2); }
+
+    /* Selection summary */
+    .selection-summary {
+      min-height: 26px; font-size: 14px; color: var(--muted);
+      padding: 4px 0; transition: color .15s;
+    }
+    .selection-summary.has-value { color: var(--text); font-weight: 600; }
+
+    /* Action buttons */
     .action-btn {
-      width: 100%;
-      height: 72px;
-      border-radius: 16px;
-      font-size: 20px;
-      font-weight: 800;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+      width: 100%; height: 68px; border-radius: 14px;
+      font-size: 19px; font-weight: 800; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
       transition: transform .1s, box-shadow .1s;
     }
     .action-btn:active { transform: scale(.97); }
-    .action-btn.pause-record {
+    .action-btn.primary-yellow {
       background: linear-gradient(135deg, var(--accent), #e6b800);
-      color: #101418;
-      box-shadow: 0 6px 24px rgba(255,204,77,.3);
+      color: #101418; box-shadow: 0 6px 24px rgba(255,204,77,.28);
     }
-    .action-btn.resume {
+    .action-btn.primary-green {
       background: linear-gradient(135deg, var(--accent-2), #27b589);
-      color: #101418;
-      box-shadow: 0 6px 24px rgba(66,211,165,.3);
+      color: #101418; box-shadow: 0 6px 24px rgba(66,211,165,.28);
     }
-    .action-btn:disabled {
-      opacity: .4;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
+    .action-btn.secondary-btn {
+      background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      color: var(--text); box-shadow: none; height: 52px; font-size: 16px;
     }
+    .action-btn:disabled { opacity: .35; cursor: not-allowed; transform: none; box-shadow: none; }
 
-    /* ── Cue form card ── */
-    .cue-form-card {
-      display: none;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 18px;
-      gap: 14px;
-      flex-direction: column;
+    /* Upload zone */
+    .upload-zone {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; border: 2px dashed var(--border);
+      border-radius: 14px; padding: 32px 20px; cursor: pointer;
+      transition: border-color .2s, background .2s; text-align: center;
     }
-    .cue-form-card.visible { display: flex; }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent-2); background: rgba(66,211,165,.05);
+    }
+    .upload-icon { font-size: 34px; }
+    .upload-zone p { color: var(--muted); font-size: 14px; }
+    .upload-zone input { display: none; }
 
-    .cue-time-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--muted);
+    /* Video */
+    #videoPlayer {
+      width: 100%; border-radius: 12px; background: #000;
+      max-height: 300px; object-fit: contain;
     }
-    .cue-time-badge strong {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--accent);
-      font-variant-numeric: tabular-nums;
+    .video-time-bar { display: flex; align-items: center; gap: 10px; padding: 6px 0 2px; }
+    .time-display { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 800; color: var(--accent); min-width: 64px; }
+    .playing-dot {
+      width: 9px; height: 9px; border-radius: 50%; background: var(--accent-2);
+      box-shadow: 0 0 8px rgba(66,211,165,.6); flex-shrink: 0;
+      animation: dotBlink 1s ease-in-out infinite;
     }
+    @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:.15} }
+    .playing-dot.paused { animation: none; opacity: .25; background: var(--muted); box-shadow: none; }
 
-    label.field-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      display: block;
-      margin-bottom: 6px;
+    /* Marked time badge */
+    .marked-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,204,77,.12); border: 1px solid rgba(255,204,77,.3);
+      border-radius: 10px; padding: 8px 14px;
     }
-    input.text-input, textarea.text-output {
-      width: 100%;
-      background: rgba(255,255,255,.05);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 15px;
-      padding: 10px 12px;
-      outline: none;
-      transition: border-color .15s;
-    }
-    input.text-input:focus, textarea.text-output:focus {
-      border-color: var(--accent-2);
-    }
+    .marked-badge-time { font-size: 24px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
 
-    /* Position chips */
-    .pos-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .pos-chip {
-      padding: 7px 14px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.05);
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s, border-color .15s, color .15s;
-    }
-    .pos-chip:hover { border-color: var(--accent-2); color: var(--accent-2); }
-    .pos-chip.active {
-      background: rgba(66,211,165,.18);
-      border-color: var(--accent-2);
-      color: var(--accent-2);
-    }
-
-    /* Cue form action row */
-    .form-actions {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 10px;
-    }
+    /* Form row buttons */
+    .form-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
     .btn-skip {
-      height: 50px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.05);
-      color: var(--muted);
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
+      height: 52px; border-radius: 10px; border: 1px solid var(--border);
+      background: rgba(255,255,255,.05); color: var(--muted); font-size: 15px;
+      font-weight: 600; cursor: pointer;
     }
     .btn-skip:hover { background: rgba(255,255,255,.1); color: var(--text); }
     .btn-add {
-      height: 50px;
-      border-radius: 10px;
-      border: none;
-      background: var(--accent-2);
-      color: #101418;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
+      height: 52px; border-radius: 10px; border: none; background: var(--accent-2);
+      color: #101418; font-size: 16px; font-weight: 800; cursor: pointer;
       transition: transform .1s;
     }
     .btn-add:active { transform: scale(.97); }
-    .btn-add:disabled { opacity: .35; cursor: not-allowed; transform: none; }
 
-    /* ── Output section ── */
-    .output-section { display: none; flex-direction: column; gap: 10px; }
-    .output-section.has-items { display: flex; }
-    .output-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+    /* Output */
+    .output-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .output-header h2 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .btn-copy, .btn-clear {
+      padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
     }
-    .output-header h2 { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-    .btn-copy {
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.05);
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    .btn-copy { border: 1px solid var(--border); background: rgba(255,255,255,.05); color: var(--text); }
     .btn-copy:hover { background: rgba(255,255,255,.1); }
-    .btn-clear {
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,107,107,.3);
-      background: rgba(255,107,107,.07);
-      color: var(--danger);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    .btn-clear { border: 1px solid rgba(255,107,107,.3); background: rgba(255,107,107,.07); color: var(--danger); }
     textarea.text-output {
-      min-height: 140px;
-      resize: vertical;
-      font-size: 13px;
-      line-height: 1.7;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-    }
-    .cue-count {
-      font-size: 12px;
-      color: var(--muted);
+      min-height: 130px; resize: vertical; font-size: 13px;
+      line-height: 1.8; font-family: 'SF Mono', 'Fira Code', monospace;
     }
 
-    /* ── Divider ── */
-    .divider {
-      border: none;
-      border-top: 1px solid var(--border);
-    }
-
-    /* ── Hint ── */
+    /* Utils */
+    .divider { border: none; border-top: 1px solid var(--border); }
     .hint { font-size: 13px; color: var(--muted); }
-
-    /* Section gap */
-    .stack { display: flex; flex-direction: column; gap: 14px; }
+    .row { display: flex; align-items: center; gap: 12px; }
+    .spacer { flex: 1; }
   </style>
 </head>
 <body>
@@ -329,77 +222,110 @@
   <div class="topbar">
     <a href="/" class="back-btn">← 返回</a>
     <h1>提示词制作</h1>
-    <span class="step-pill" id="stepPill">第一步：上传视频</span>
+    <span class="step-pill" id="stepPill">第一步：设置人员</span>
   </div>
 
-  <div class="stack">
-    <!-- Upload -->
+  <!-- ══ PHASE 1: Setup dancers ══ -->
+  <div class="phase active" id="phase1">
+    <div class="card">
+      <div class="card-title">舞者人员设置</div>
+
+      <div class="row" style="margin-bottom:16px;">
+        <label class="field-label" style="margin:0;">参与人数</label>
+        <span class="spacer"></span>
+        <div class="stepper">
+          <button class="stepper-btn" id="decBtn">−</button>
+          <input class="stepper-val" id="countVal" type="number" value="4" min="1" max="20" readonly>
+          <button class="stepper-btn" id="incBtn">+</button>
+        </div>
+      </div>
+
+      <div class="dancer-grid" id="dancerGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">拍摄提示词预设 <span class="hint" style="text-transform:none;letter-spacing:0;">（可在制作时自定义添加）</span></div>
+      <div class="chips" id="tipPresetsEdit"></div>
+    </div>
+
+    <button class="action-btn primary-green" id="startMakingBtn">
+      下一步：上传视频 →
+    </button>
+  </div>
+
+  <!-- ══ PHASE 2: Upload ══ -->
+  <div class="phase" id="phase2">
     <div class="upload-zone" id="uploadZone">
       <span class="upload-icon">🎬</span>
       <strong>点击上传视频或音频</strong>
       <p>支持 MP4 / MOV / MP3 / WAV 等格式</p>
       <input type="file" id="fileInput" accept=".mp4,.mov,.m4v,.mp3,.m4a,.aac,.wav,.flac,video/*,audio/*">
     </div>
+    <button class="action-btn secondary-btn" id="backToSetupBtn">← 返回重新设置人员</button>
+  </div>
 
-    <!-- Video player -->
+  <!-- ══ PHASE 3: Record ══ -->
+  <div class="phase" id="phase3">
     <video id="videoPlayer" controls playsinline webkit-playsinline loop></video>
 
-    <!-- Time bar -->
-    <div class="video-time-bar" id="videoTimeBar">
+    <div class="video-time-bar">
       <span class="playing-dot" id="playingDot"></span>
       <span class="time-display" id="currentTimeDisplay">00:00</span>
       <span class="hint" id="totalTimeDisplay">/ --:--</span>
+      <span class="spacer"></span>
+      <span class="hint" id="cueCountLabel" style="font-weight:600;"></span>
     </div>
 
-    <!-- Main action button -->
-    <button class="action-btn pause-record" id="mainActionBtn" disabled>
-      <span>⏸</span> 暂停并记录时间
+    <!-- Pause & mark button -->
+    <button class="action-btn primary-yellow" id="markBtn" disabled>
+      <span>⏸</span> 暂停并记录
     </button>
 
-    <!-- Cue form card -->
-    <div class="cue-form-card" id="cueFormCard">
-      <div class="cue-time-badge">
-        <span>📍 记录时间：</span>
-        <strong id="markedTime">00:00</strong>
+    <!-- Cue form (shown when paused) -->
+    <div class="card" id="cueFormCard" style="display:none; gap:16px; flex-direction:column;">
+      <div class="row">
+        <div class="marked-badge">
+          <span style="font-size:13px;color:var(--muted);">📍</span>
+          <span class="marked-badge-time" id="markedTimeEl">00:00</span>
+        </div>
+        <span class="hint">记录时间点</span>
       </div>
 
       <hr class="divider">
 
+      <!-- Name chips -->
       <div>
-        <label class="field-label" for="nameInput">要拍谁</label>
-        <input type="text" class="text-input" id="nameInput" placeholder="例：小林 / A组 / 全员" autocomplete="off">
+        <label class="field-label">要拍谁 <span style="color:var(--danger);font-size:10px;" id="nameError"></span></label>
+        <div class="chips" id="nameChips" style="margin-bottom:10px;"></div>
+        <div class="selection-summary" id="nameSummary">未选择</div>
       </div>
 
+      <hr class="divider">
+
+      <!-- Tip chips -->
       <div>
-        <label class="field-label">拍摄方位</label>
-        <div class="pos-chips" id="posChips">
-          <button class="pos-chip" data-val="左侧">左</button>
-          <button class="pos-chip" data-val="中间">中</button>
-          <button class="pos-chip" data-val="右侧">右</button>
-          <button class="pos-chip" data-val="全景">全景</button>
-          <button class="pos-chip" data-val="特写">特写</button>
-          <button class="pos-chip" data-val="跟拍">跟拍</button>
-        </div>
-        <input type="text" class="text-input" id="shotInput" placeholder="或直接输入：左侧中景、右侧特写…" autocomplete="off">
+        <label class="field-label">拍摄提示</label>
+        <div class="chips" id="tipChips" style="margin-bottom:10px;"></div>
+        <div class="selection-summary" id="tipSummary">未选择（可不填）</div>
       </div>
 
       <div class="form-actions">
         <button class="btn-skip" id="skipBtn">跳过</button>
-        <button class="btn-add" id="addCueBtn">✓ 添加这条</button>
+        <button class="btn-add" id="addBtn">✓ 添加这条</button>
       </div>
     </div>
 
-    <!-- Resume button (shown after adding/skipping) -->
-    <button class="action-btn resume" id="resumeBtn" style="display:none;">
+    <!-- Resume button -->
+    <button class="action-btn primary-green" id="resumeBtn" style="display:none;">
       <span>▶</span> 继续播放
     </button>
 
     <hr class="divider">
 
     <!-- Output -->
-    <div class="output-section" id="outputSection">
+    <div id="outputSection" style="display:none; flex-direction:column; gap:10px;">
       <div class="output-header">
-        <h2>生成的提示词 <span class="cue-count" id="cueCountLabel"></span></h2>
+        <h2>生成的提示词 <span id="outputCount" style="font-weight:400;text-transform:none;letter-spacing:0;"></span></h2>
         <div style="display:flex;gap:8px;">
           <button class="btn-clear" id="clearBtn">清空</button>
           <button class="btn-copy" id="copyBtn">复制全部</button>
@@ -408,207 +334,342 @@
       <textarea class="text-output" id="outputArea" readonly placeholder="添加提示词后显示在这里…"></textarea>
       <p class="hint">复制后可粘贴到监控界面的「批量编辑」框中直接导入。</p>
     </div>
+
+    <button class="action-btn secondary-btn" id="backToUploadBtn" style="height:44px;font-size:14px;margin-top:4px;">← 重新上传文件</button>
   </div>
 </div>
 
 <script>
-  const video = document.getElementById('videoPlayer');
-  const fileInput = document.getElementById('fileInput');
-  const uploadZone = document.getElementById('uploadZone');
-  const mainActionBtn = document.getElementById('mainActionBtn');
-  const resumeBtn = document.getElementById('resumeBtn');
-  const cueFormCard = document.getElementById('cueFormCard');
-  const markedTimeEl = document.getElementById('markedTime');
-  const nameInput = document.getElementById('nameInput');
-  const shotInput = document.getElementById('shotInput');
-  const addCueBtn = document.getElementById('addCueBtn');
-  const skipBtn = document.getElementById('skipBtn');
-  const outputSection = document.getElementById('outputSection');
-  const outputArea = document.getElementById('outputArea');
-  const copyBtn = document.getElementById('copyBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const videoTimeBar = document.getElementById('videoTimeBar');
-  const currentTimeDisplay = document.getElementById('currentTimeDisplay');
-  const totalTimeDisplay = document.getElementById('totalTimeDisplay');
-  const playingDot = document.getElementById('playingDot');
-  const stepPill = document.getElementById('stepPill');
-  const cueCountLabel = document.getElementById('cueCountLabel');
+// ── State ────────────────────────────────────────
+const DEFAULT_TIPS = ['左侧','中间','右侧','全景','特写','跟拍','中景','近景','横移'];
 
-  let cues = [];
-  let markedTime = 0;
+let dancers = [];     // ['小林', 'A组', ...]
+let tipPresets = [...DEFAULT_TIPS]; // editable tip list
+let selectedNames = new Set();
+let selectedTips = new Set();
+let cues = [];
+let markedTime = 0;
 
-  // ── Helpers ──────────────────────────────────
-  function fmt(s) {
-    const safe = Math.max(0, s);
-    const m = Math.floor(safe / 60);
-    const sec = Math.floor(safe % 60);
-    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+// ── DOM refs ──────────────────────────────────────
+const $ = id => document.getElementById(id);
+const phase1 = $('phase1'), phase2 = $('phase2'), phase3 = $('phase3');
+const stepPill = $('stepPill');
+const countVal = $('countVal');
+const dancerGrid = $('dancerGrid');
+const tipPresetsEdit = $('tipPresetsEdit');
+const startMakingBtn = $('startMakingBtn');
+const backToSetupBtn = $('backToSetupBtn');
+const uploadZone = $('uploadZone');
+const fileInput = $('fileInput');
+const videoPlayer = $('videoPlayer');
+const playingDot = $('playingDot');
+const currentTimeDisplay = $('currentTimeDisplay');
+const totalTimeDisplay = $('totalTimeDisplay');
+const cueCountLabel = $('cueCountLabel');
+const markBtn = $('markBtn');
+const cueFormCard = $('cueFormCard');
+const markedTimeEl = $('markedTimeEl');
+const nameChips = $('nameChips');
+const tipChips = $('tipChips');
+const nameSummary = $('nameSummary');
+const tipSummary = $('tipSummary');
+const nameError = $('nameError');
+const skipBtn = $('skipBtn');
+const addBtn = $('addBtn');
+const resumeBtn = $('resumeBtn');
+const outputSection = $('outputSection');
+const outputArea = $('outputArea');
+const outputCount = $('outputCount');
+const copyBtn = $('copyBtn');
+const clearBtn = $('clearBtn');
+const backToUploadBtn = $('backToUploadBtn');
+
+// ── Helpers ───────────────────────────────────────
+function fmt(s) {
+  const safe = Math.max(0, s);
+  const m = Math.floor(safe / 60);
+  const sec = Math.floor(safe % 60);
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function showPhase(n) {
+  [phase1, phase2, phase3].forEach((p, i) => p.classList.toggle('active', i + 1 === n));
+  stepPill.textContent = ['第一步：设置人员', '第二步：上传文件', '第三步：制作提示词'][n - 1];
+}
+
+// ── Phase 1: Dancer setup ─────────────────────────
+function renderDancerGrid() {
+  const count = parseInt(countVal.value) || 4;
+  // Preserve existing values
+  const existing = Array.from(dancerGrid.querySelectorAll('input')).map(i => i.value);
+  dancerGrid.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'dancer-name-wrap';
+    const idx = document.createElement('span');
+    idx.className = 'dancer-index';
+    idx.textContent = i + 1;
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'text-input dancer-name-input';
+    inp.placeholder = `舞者 ${i + 1}`;
+    inp.maxLength = 10;
+    inp.autocomplete = 'off';
+    inp.value = existing[i] || '';
+    wrap.appendChild(idx);
+    wrap.appendChild(inp);
+    dancerGrid.appendChild(wrap);
   }
+}
 
-  // ── File upload ───────────────────────────────
-  function loadFile(file) {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    video.src = url;
-    video.style.display = 'block';
-    uploadZone.style.display = 'none';
-    videoTimeBar.style.display = 'flex';
-    mainActionBtn.disabled = false;
-    stepPill.textContent = '第二步：播放并标记';
-  }
+$('incBtn').addEventListener('click', () => {
+  const v = Math.min(20, parseInt(countVal.value) + 1);
+  countVal.value = v; renderDancerGrid();
+});
+$('decBtn').addEventListener('click', () => {
+  const v = Math.max(1, parseInt(countVal.value) - 1);
+  countVal.value = v; renderDancerGrid();
+});
 
-  uploadZone.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', e => loadFile(e.target.files?.[0]));
-
-  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-  uploadZone.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadZone.classList.remove('dragover');
-    loadFile(e.dataTransfer.files?.[0]);
-  });
-
-  // ── Time display ──────────────────────────────
-  video.addEventListener('loadedmetadata', () => {
-    totalTimeDisplay.textContent = `/ ${fmt(video.duration)}`;
-  });
-
-  video.addEventListener('timeupdate', () => {
-    currentTimeDisplay.textContent = fmt(video.currentTime);
-  });
-
-  video.addEventListener('play', () => {
-    playingDot.classList.remove('paused');
-  });
-  video.addEventListener('pause', () => {
-    playingDot.classList.add('paused');
-  });
-
-  // ── State machine ─────────────────────────────
-  // States: idle (playing) | marked (paused, form showing) | saved (form done, resume btn)
-  function enterMarkedState() {
-    video.pause();
-    markedTime = video.currentTime;
-    markedTimeEl.textContent = fmt(markedTime);
-    // Clear form
-    nameInput.value = '';
-    shotInput.value = '';
-    document.querySelectorAll('.pos-chip').forEach(c => c.classList.remove('active'));
-    // Show form
-    cueFormCard.classList.add('visible');
-    mainActionBtn.style.display = 'none';
-    resumeBtn.style.display = 'none';
-    nameInput.focus();
-    stepPill.textContent = '第三步：填写提示词';
-  }
-
-  function enterSavedState() {
-    cueFormCard.classList.remove('visible');
-    resumeBtn.style.display = 'flex';
-    mainActionBtn.style.display = 'none';
-    stepPill.textContent = '已添加，继续播放？';
-  }
-
-  function enterIdleState() {
-    cueFormCard.classList.remove('visible');
-    resumeBtn.style.display = 'none';
-    mainActionBtn.style.display = 'flex';
-    video.play();
-    stepPill.textContent = '第二步：播放并标记';
-  }
-
-  mainActionBtn.addEventListener('click', enterMarkedState);
-  resumeBtn.addEventListener('click', enterIdleState);
-
-  skipBtn.addEventListener('click', () => {
-    enterSavedState();
-    // Don't add cue, just resume flow
-    cueFormCard.classList.remove('visible');
-    resumeBtn.style.display = 'flex';
-    mainActionBtn.style.display = 'none';
-    stepPill.textContent = '已跳过，继续？';
-  });
-
-  // ── Position chips ────────────────────────────
-  document.querySelectorAll('.pos-chip').forEach(chip => {
+// Tip preset editor in phase 1
+function renderTipPresetsEdit() {
+  tipPresetsEdit.innerHTML = '';
+  tipPresets.forEach((tip, i) => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = tip;
+    chip.title = '点击删除';
     chip.addEventListener('click', () => {
-      document.querySelectorAll('.pos-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      const existing = shotInput.value.trim();
-      // If existing text isn't a chip value, append; otherwise replace
-      const chipVals = ['左侧','中间','右侧','全景','特写','跟拍'];
-      const startsWithChip = chipVals.some(v => existing.startsWith(v));
-      if (!existing || startsWithChip) {
-        shotInput.value = chip.dataset.val;
-      } else {
-        shotInput.value = chip.dataset.val + existing.replace(new RegExp('^(' + chipVals.join('|') + ')'), '');
-      }
+      tipPresets.splice(i, 1);
+      renderTipPresetsEdit();
     });
+    tipPresetsEdit.appendChild(chip);
   });
-
-  shotInput.addEventListener('input', () => {
-    // deactivate chips if user types freely
-    const val = shotInput.value;
-    const chipVals = ['左侧','中间','右侧','全景','特写','跟拍'];
-    document.querySelectorAll('.pos-chip').forEach(chip => {
-      chip.classList.toggle('active', val === chip.dataset.val);
-    });
-  });
-
-  // ── Add cue ───────────────────────────────────
-  addCueBtn.addEventListener('click', () => {
-    const name = nameInput.value.trim();
-    if (!name) { nameInput.focus(); nameInput.style.borderColor = 'var(--danger)'; return; }
-    nameInput.style.borderColor = '';
-    const shot = shotInput.value.trim();
-    const line = `${fmt(markedTime)}, ${name}${shot ? ', ' + shot : ''}`;
-    cues.push({ time: markedTime, line });
-    cues.sort((a, b) => a.time - b.time);
-    updateOutput();
-    enterSavedState();
-  });
-
-  nameInput.addEventListener('input', () => { nameInput.style.borderColor = ''; });
-
-  // ── Keyboard shortcut: Space to pause/mark ────
-  document.addEventListener('keydown', e => {
-    if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-      e.preventDefault();
-      if (mainActionBtn.style.display !== 'none' && !mainActionBtn.disabled) {
-        enterMarkedState();
-      } else if (resumeBtn.style.display !== 'none') {
-        enterIdleState();
-      }
-    }
-    if (e.code === 'Enter' && document.activeElement === nameInput) {
-      addCueBtn.click();
+  // Add custom tip button
+  const addChip = document.createElement('button');
+  addChip.className = 'chip add-chip';
+  addChip.textContent = '＋ 添加提示';
+  addChip.addEventListener('click', () => {
+    const val = prompt('输入新的拍摄提示词：');
+    if (val && val.trim()) {
+      tipPresets.push(val.trim());
+      renderTipPresetsEdit();
     }
   });
+  tipPresetsEdit.appendChild(addChip);
+}
 
-  // ── Output ────────────────────────────────────
-  function updateOutput() {
-    const text = cues.map(c => c.line).join('\n');
-    outputArea.value = text;
-    outputSection.classList.toggle('has-items', cues.length > 0);
-    cueCountLabel.textContent = `（${cues.length} 条）`;
+startMakingBtn.addEventListener('click', () => {
+  const inputs = dancerGrid.querySelectorAll('input');
+  dancers = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+  if (!dancers.length) {
+    alert('请至少输入一位舞者的名字！');
+    return;
   }
+  showPhase(2);
+});
 
-  copyBtn.addEventListener('click', async () => {
-    await navigator.clipboard.writeText(outputArea.value).catch(() => {});
-    copyBtn.textContent = '✓ 已复制';
-    setTimeout(() => copyBtn.textContent = '复制全部', 1500);
+// Init phase 1
+renderDancerGrid();
+renderTipPresetsEdit();
+
+// ── Phase 2: Upload ───────────────────────────────
+backToSetupBtn.addEventListener('click', () => showPhase(1));
+
+uploadZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => loadFile(e.target.files?.[0]));
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('dragover');
+  loadFile(e.dataTransfer.files?.[0]);
+});
+
+function loadFile(file) {
+  if (!file) return;
+  videoPlayer.src = URL.createObjectURL(file);
+  markBtn.disabled = false;
+  renderNameChips();
+  renderTipChips();
+  showPhase(3);
+  enterIdleState();
+}
+
+backToUploadBtn.addEventListener('click', () => {
+  videoPlayer.pause();
+  showPhase(2);
+});
+
+// ── Phase 3: Recording ────────────────────────────
+videoPlayer.addEventListener('loadedmetadata', () => {
+  totalTimeDisplay.textContent = `/ ${fmt(videoPlayer.duration)}`;
+});
+videoPlayer.addEventListener('timeupdate', () => {
+  currentTimeDisplay.textContent = fmt(videoPlayer.currentTime);
+});
+videoPlayer.addEventListener('play', () => playingDot.classList.remove('paused'));
+videoPlayer.addEventListener('pause', () => playingDot.classList.add('paused'));
+
+// Name chips
+function renderNameChips() {
+  nameChips.innerHTML = '';
+  dancers.forEach(name => {
+    const chip = makeChip(name, 'name-chip', selectedNames);
+    nameChips.appendChild(chip);
   });
+  updateNameSummary();
+}
 
-  clearBtn.addEventListener('click', () => {
-    if (!cues.length || confirm('确定清空所有提示词？')) {
-      cues = [];
-      updateOutput();
+// Tip chips
+function renderTipChips() {
+  tipChips.innerHTML = '';
+  tipPresets.forEach(tip => {
+    const chip = makeChip(tip, 'tip-chip', selectedTips);
+    tipChips.appendChild(chip);
+  });
+  // Custom add button
+  const addChip = document.createElement('button');
+  addChip.type = 'button';
+  addChip.className = 'chip add-chip';
+  addChip.textContent = '＋ 自定义';
+  addChip.addEventListener('click', () => {
+    const val = prompt('输入自定义拍摄提示：');
+    if (val && val.trim()) {
+      tipPresets.push(val.trim());
+      selectedTips.add(val.trim());
+      renderTipChips();
+      updateTipSummary();
     }
   });
+  tipChips.appendChild(addChip);
+  updateTipSummary();
+}
 
-  // Initial state
-  mainActionBtn.style.display = 'flex';
+function makeChip(label, extraClass, selectionSet) {
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = `chip ${extraClass}${selectionSet.has(label) ? ' active' : ''}`;
+  chip.textContent = label;
+  chip.addEventListener('click', () => {
+    if (selectionSet.has(label)) selectionSet.delete(label);
+    else selectionSet.add(label);
+    chip.classList.toggle('active', selectionSet.has(label));
+    if (extraClass === 'name-chip') updateNameSummary();
+    else updateTipSummary();
+  });
+  return chip;
+}
+
+function updateNameSummary() {
+  const arr = dancers.filter(n => selectedNames.has(n)); // preserve order
+  if (!arr.length) {
+    nameSummary.textContent = '未选择';
+    nameSummary.className = 'selection-summary';
+  } else {
+    nameSummary.textContent = arr.join('、');
+    nameSummary.className = 'selection-summary has-value';
+  }
+}
+
+function updateTipSummary() {
+  const arr = tipPresets.filter(t => selectedTips.has(t));
+  if (!arr.length) {
+    tipSummary.textContent = '未选择（可不填）';
+    tipSummary.className = 'selection-summary';
+  } else {
+    tipSummary.textContent = arr.join('、');
+    tipSummary.className = 'selection-summary has-value';
+  }
+}
+
+// State machine
+function enterMarkState() {
+  videoPlayer.pause();
+  markedTime = videoPlayer.currentTime;
+  markedTimeEl.textContent = fmt(markedTime);
+  // Reset selections
+  selectedNames.clear();
+  selectedTips.clear();
+  nameError.textContent = '';
+  renderNameChips();
+  renderTipChips();
+  // Show form
+  cueFormCard.style.display = 'flex';
+  markBtn.style.display = 'none';
   resumeBtn.style.display = 'none';
+}
+
+function enterIdleState() {
+  cueFormCard.style.display = 'none';
+  resumeBtn.style.display = 'none';
+  markBtn.style.display = 'flex';
+  videoPlayer.play().catch(() => {});
+}
+
+function enterSavedState() {
+  cueFormCard.style.display = 'none';
+  markBtn.style.display = 'none';
+  resumeBtn.style.display = 'flex';
+}
+
+markBtn.addEventListener('click', enterMarkState);
+resumeBtn.addEventListener('click', enterIdleState);
+
+skipBtn.addEventListener('click', enterSavedState);
+
+addBtn.addEventListener('click', () => {
+  // Validate: at least one name
+  const nameArr = dancers.filter(n => selectedNames.has(n));
+  if (!nameArr.length) {
+    nameError.textContent = '请至少选一位';
+    return;
+  }
+  nameError.textContent = '';
+
+  const tipArr = tipPresets.filter(t => selectedTips.has(t));
+  const namePart = nameArr.join('、');
+  const tipPart = tipArr.join('、');
+  const line = `${fmt(markedTime)}, ${namePart}${tipPart ? ', ' + tipPart : ''}`;
+
+  cues.push({ time: markedTime, line });
+  cues.sort((a, b) => a.time - b.time);
+  updateOutput();
+  enterSavedState();
+});
+
+// Output
+function updateOutput() {
+  const text = cues.map(c => c.line).join('\n');
+  outputArea.value = text;
+  const hasItems = cues.length > 0;
+  outputSection.style.display = hasItems ? 'flex' : 'none';
+  outputCount.textContent = `（${cues.length} 条）`;
+  cueCountLabel.textContent = cues.length ? `${cues.length} 条` : '';
+}
+
+copyBtn.addEventListener('click', async () => {
+  await navigator.clipboard.writeText(outputArea.value).catch(() => {});
+  copyBtn.textContent = '✓ 已复制';
+  setTimeout(() => copyBtn.textContent = '复制全部', 1600);
+});
+
+clearBtn.addEventListener('click', () => {
+  if (!cues.length || confirm('确定清空所有提示词？')) {
+    cues = [];
+    updateOutput();
+  }
+});
+
+// Keyboard: Space = mark / resume
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (markBtn.style.display !== 'none' && !markBtn.disabled) enterMarkState();
+    else if (resumeBtn.style.display !== 'none') enterIdleState();
+  }
+});
 </script>
 </body>
 </html>
