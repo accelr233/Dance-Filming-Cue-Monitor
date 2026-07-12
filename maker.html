@@ -333,6 +333,39 @@
       </div>
       <textarea class="text-output" id="outputArea" readonly placeholder="添加提示词后显示在这里…"></textarea>
       <p class="hint">复制后可粘贴到监控界面的「批量编辑」框中直接导入。</p>
+      <button class="action-btn secondary-btn" id="saveToLibraryBtn" style="height:52px;font-size:15px;border-color:rgba(66,211,165,.3);color:var(--accent-2);">🎵 保存到歌曲库</button>
+    </div>
+
+    <!-- Save to Library Modal -->
+    <div id="libModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;padding:16px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;width:100%;max-width:420px;display:grid;gap:14px;">
+        <h2 style="font-size:17px;font-weight:800;">保存到歌曲库</h2>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;">歌曲名 *</label>
+          <input type="text" id="libSongTitle" class="text-input" placeholder="例：シュガー" autocomplete="off">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;">歌手 / 团体</label>
+          <input type="text" id="libSongArtist" class="text-input" placeholder="例：Ayumu Imazu" autocomplete="off">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;">版本标签</label>
+          <input type="text" id="libVerLabel" class="text-input" placeholder="例：完整版、Cut 版" autocomplete="off">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;">振付 / 编舞</label>
+          <input type="text" id="libChoreo" class="text-input" placeholder="例：Kento Mok" autocomplete="off">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;">管理员密钥 *</label>
+          <input type="password" id="libAdminKey" class="text-input" placeholder="需要管理员权限才能保存" autocomplete="off">
+        </div>
+        <p id="libError" style="font-size:13px;color:var(--danger);min-height:16px;"></p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button id="libCancel" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;">取消</button>
+          <button id="libSave" style="padding:10px 18px;border-radius:8px;border:none;background:var(--accent-2);color:#101418;font-size:14px;font-weight:700;cursor:pointer;">保存</button>
+        </div>
+      </div>
     </div>
 
     <button class="action-btn secondary-btn" id="backToUploadBtn" style="height:44px;font-size:14px;margin-top:4px;">← 重新上传文件</button>
@@ -694,6 +727,71 @@ document.addEventListener('keydown', e => {
     else if (resumeBtn.style.display !== 'none') enterIdleState();
   }
 });
+
+// ── Save to Library ───────────────────────────────
+const libModal = $('libModal');
+const libError = $('libError');
+
+$('saveToLibraryBtn').addEventListener('click', () => {
+  libError.textContent = '';
+  // Pre-fill admin key from sessionStorage if previously used
+  const saved = sessionStorage.getItem('adminKey');
+  if (saved) $('libAdminKey').value = saved;
+  libModal.style.display = 'flex';
+  $('libSongTitle').focus();
+});
+
+$('libCancel').addEventListener('click', () => { libModal.style.display = 'none'; });
+libModal.addEventListener('click', e => { if (e.target === libModal) libModal.style.display = 'none'; });
+
+$('libSave').addEventListener('click', async () => {
+  const title = $('libSongTitle').value.trim();
+  const artist = $('libSongArtist').value.trim();
+  const label = $('libVerLabel').value.trim();
+  const choreographer = $('libChoreo').value.trim();
+  const key = $('libAdminKey').value.trim();
+  const cuesText = $('outputArea').value.trim();
+
+  if (!title) { libError.textContent = '请输入歌曲名'; return; }
+  if (!key)   { libError.textContent = '请输入管理员密钥'; return; }
+  if (!cuesText) { libError.textContent = '提示词内容为空'; return; }
+  libError.textContent = '';
+
+  const headers = { 'Content-Type': 'application/json', 'X-Admin-Key': key };
+  try {
+    // Search for existing song with same title
+    const searchRes = await fetch(`/api/songs?q=${encodeURIComponent(title)}`);
+    const searchData = await searchRes.json();
+    let song = searchData.find(s => s.title.trim().toLowerCase() === title.toLowerCase());
+
+    if (!song) {
+      // Create new song
+      const createRes = await fetch('/api/songs', {
+        method: 'POST', headers,
+        body: JSON.stringify({ title, artist })
+      });
+      if (!createRes.ok) { const d = await createRes.json(); throw new Error(d.error); }
+      song = await createRes.json();
+    }
+
+    // Add version
+    const verRes = await fetch(`/api/songs/${song._id}/versions`, {
+      method: 'POST', headers,
+      body: JSON.stringify({ label, choreographer, cues: cuesText })
+    });
+    if (!verRes.ok) { const d = await verRes.json(); throw new Error(d.error); }
+
+    sessionStorage.setItem('adminKey', key);
+    libModal.style.display = 'none';
+    // Show success inline
+    $('saveToLibraryBtn').textContent = '✓ 已保存到歌曲库';
+    $('saveToLibraryBtn').style.color = 'var(--accent-2)';
+    setTimeout(() => { $('saveToLibraryBtn').textContent = '🎵 保存到歌曲库'; }, 3000);
+  } catch (e) {
+    libError.textContent = e.message || '保存失败';
+  }
+});
+
 </script>
 </body>
 </html>
