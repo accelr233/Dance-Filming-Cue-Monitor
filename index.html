@@ -668,7 +668,79 @@
       background: rgba(255,255,255,.09);
       border-color: rgba(255,255,255,.25);
     }
+
+    /* ── Theme toggle button ───────────────────── */
+    .theme-toggle-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      color: var(--muted); font-size: 15px;
+      cursor: pointer; display: grid; place-items: center;
+      transition: all .18s; flex-shrink: 0;
+    }
+    .theme-toggle-btn:hover { background: rgba(255,255,255,.12); color: var(--text); }
+    [data-theme="classic"] .theme-toggle-btn { color: var(--accent); border-color: rgba(255,204,77,.35); }
+
+    /* ── Classic theme overrides ───────────────── */
+    [data-theme="classic"] {
+      --bg: #101418; --panel: #171d22; --panel-2: #20272d;
+      --text: #f5f7f8; --muted: #9ba8af; --line: #2f3940;
+      --accent: #ffcc4d; --accent-2: #42d3a5; --danger: #ff6b6b;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    [data-theme="classic"] body {
+      background:
+        radial-gradient(circle at 14% 0%, rgba(255,204,77,.12), transparent 30rem),
+        linear-gradient(145deg, #101418 0%, #152026 45%, #101418 100%);
+    }
+    [data-theme="classic"] .hero {
+      background:
+        linear-gradient(150deg, rgba(255,204,77,.16), transparent 42%),
+        linear-gradient(0deg, rgba(0,0,0,.16), rgba(0,0,0,.16)),
+        var(--panel);
+    }
+    [data-theme="classic"] .now-playing {
+      background: rgba(66,211,165,.12); border-color: rgba(66,211,165,.3); border-radius: 12px;
+    }
+    [data-theme="classic"] .now-playing-dot { box-shadow: 0 0 8px rgba(66,211,165,.7); }
+    [data-theme="classic"] .now-playing-label { color: var(--accent-2); }
+    [data-theme="classic"] .now-playing-elapsed { color: rgba(66,211,165,.6); }
+    [data-theme="classic"] .now-playing-text { color: var(--accent-2); }
+    [data-theme="classic"] .now-playing-shot { color: rgba(66,211,165,.65); }
+    [data-theme="classic"] .now-playing.idle { background: rgba(255,255,255,.045); border-color: rgba(255,255,255,.08); }
+    [data-theme="classic"] .now-playing.idle .now-playing-dot { background: var(--muted); box-shadow: none; }
+    [data-theme="classic"] .now-playing.idle .now-playing-label,
+    [data-theme="classic"] .now-playing.idle .now-playing-text { color: var(--muted); }
+    [data-theme="classic"] .countdown {
+      color: var(--accent); font-weight: 800;
+      text-shadow: 0 10px 32px rgba(255,204,77,.18);
+      letter-spacing: normal;
+    }
+    [data-theme="classic"] .primary { color: #101418; background: var(--accent); }
+    [data-theme="classic"] .secondary.blue { border-color: rgba(98,180,255,.55); color: #d9ecff; }
+    [data-theme="classic"] .secondary.active { border-color: rgba(66,211,165,.72); color: var(--accent-2); }
+    [data-theme="classic"] .cue-item.active { border-color: rgba(66,211,165,.65); background: rgba(66,211,165,.08); }
+    [data-theme="classic"] .cue-item.next { border-color: rgba(255,204,77,.65); }
+    [data-theme="classic"] .cue-time { color: var(--accent); font-weight: 800; }
+    [data-theme="classic"] .cue-item.done { opacity: .4; border-color: rgba(66,211,165,.4); }
+    [data-theme="classic"] .cue-item.done .cue-time { color: var(--accent-2); }
+    [data-theme="classic"] .client-dot { box-shadow: 0 0 6px var(--accent-2); }
+    [data-theme="classic"] .online-user-dot.host { box-shadow: 0 0 5px rgba(255,204,77,.5); }
+    [data-theme="classic"] .online-user-dot.client { box-shadow: 0 0 5px rgba(66,211,165,.5); }
+    [data-theme="classic"] .maker-link:first-of-type {
+      border: 1px dashed rgba(66,211,165,.4); background: rgba(66,211,165,.07); color: var(--accent-2);
+    }
+    [data-theme="classic"] .maker-link:first-of-type:hover {
+      background: rgba(66,211,165,.14); border-color: rgba(66,211,165,.7);
+    }
+    [data-theme="classic"] .progress-fill {
+      background: linear-gradient(90deg, var(--blue), var(--accent-2));
+    }
+    [data-theme="classic"] .play-btn { background: var(--accent); color: #101418; }
   </style>
+  <script>
+    (function(){var t=localStorage.getItem('cue-monitor-theme');if(t==='classic')document.documentElement.setAttribute('data-theme','classic');}());
+  </script>
 </head>
 <body>
   <div id="lobby" class="lobby">
@@ -683,6 +755,7 @@
     </div>
     <a href="/maker.html" class="maker-link">🎬 制作提示词</a>
     <a href="/library.html" class="maker-link" style="border-color:rgba(255,204,77,.4);background:rgba(255,204,77,.07);color:var(--accent);">🎵 歌曲提示词库</a>
+    <button class="theme-toggle-btn" id="themeToggleBtn" title="切换配色风格" style="margin-top:18px;width:auto;border-radius:999px;padding:0 16px;height:34px;font-size:13px;font-weight:600;letter-spacing:.02em;">◑ 切换配色</button>
   </div>
 
   <main class="app" id="app" style="display: none;">
@@ -693,6 +766,7 @@
       </div>
       <div class="icon-row">
         <span class="client-badge" id="clientBadge" title="已连接设备数"><span class="client-dot"></span><span id="clientCount">0</span> 在线</span>
+        <button class="icon-btn theme-toggle-btn" id="themeToggleBtnApp" type="button" title="切换配色">◑</button>
         <button class="icon-btn" id="fullscreenBtn" type="button" title="全屏">FS</button>
         <button class="icon-btn" id="wakeBtn" type="button" title="保持亮屏">ON</button>
       </div>
@@ -1342,6 +1416,33 @@
     }
     // Keep Render free-tier alive (ping every 5 min)
     setInterval(() => fetch('/ping').catch(() => {}), 5 * 60 * 1000);
+
+    // ── Theme toggle ───────────────────────────────
+    (function() {
+      const THEME_KEY = 'cue-monitor-theme';
+      let current = localStorage.getItem(THEME_KEY) || 'mono';
+
+      function applyTheme(t) {
+        current = t;
+        document.documentElement.setAttribute('data-theme', t === 'classic' ? 'classic' : '');
+        localStorage.setItem(THEME_KEY, t);
+        const label = t === 'classic' ? '◑ 经典配色' : '◑ 专业配色';
+        const btn1 = document.getElementById('themeToggleBtn');
+        const btn2 = document.getElementById('themeToggleBtnApp');
+        if (btn1) btn1.textContent = label;
+        if (btn2) btn2.title = t === 'classic' ? '切换至专业配色' : '切换至经典配色';
+      }
+
+      function toggle() { applyTheme(current === 'classic' ? 'mono' : 'classic'); }
+
+      const btn1 = document.getElementById('themeToggleBtn');
+      const btn2 = document.getElementById('themeToggleBtnApp');
+      if (btn1) btn1.addEventListener('click', toggle);
+      if (btn2) btn2.addEventListener('click', toggle);
+
+      // Set initial label
+      applyTheme(current);
+    })();
   </script>
 </body>
 </html>

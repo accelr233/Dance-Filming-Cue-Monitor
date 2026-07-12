@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script>(function(){var t=localStorage.getItem('cue-monitor-theme');if(t==='classic')document.documentElement.setAttribute('data-theme','classic');}());</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -41,6 +42,14 @@
       background: rgba(255,255,255,.07); color: var(--muted);
       border: 1px solid rgba(255,255,255,.1); white-space: nowrap;
     }
+    .theme-toggle-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05);
+      color: var(--muted); font-size: 14px; cursor: pointer;
+      display: grid; place-items: center; flex-shrink: 0;
+    }
+    .theme-toggle-btn:hover { background: rgba(255,255,255,.12); color: var(--text); }
+    [data-theme="classic"] .theme-toggle-btn { color: var(--accent); border-color: rgba(255,204,77,.3); }
 
     /* Sections */
     .phase { display: none; flex-direction: column; gap: 16px; }
@@ -182,6 +191,43 @@
     }
     .marked-badge-time { font-size: 24px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
 
+    /* Form actions */
+    .form-actions { display: flex; gap: 10px; }
+
+    /* ── Classic theme overrides ───────────── */
+    [data-theme="classic"] {
+      --bg: #0e1117; --surface: #161b22;
+      --text: #e6edf3; --muted: #8b949e;
+      --accent: #ffcc4d; --accent-2: #42d3a5; --danger: #ff6b6b;
+    }
+    [data-theme="classic"] .step-pill {
+      background: rgba(255,204,77,.15); color: var(--accent); border-color: rgba(255,204,77,.3);
+    }
+    [data-theme="classic"] .stepper-val { color: var(--accent); }
+    [data-theme="classic"] .chip.active {
+      background: rgba(66,211,165,.18); border-color: var(--accent-2); color: var(--accent-2);
+    }
+    [data-theme="classic"] .chip.name-chip.active {
+      background: rgba(255,204,77,.15); border-color: var(--accent); color: var(--accent);
+    }
+    [data-theme="classic"] .chip.add-chip:hover { border-color: var(--accent-2); color: var(--accent-2); }
+    [data-theme="classic"] .action-btn.primary-yellow {
+      background: linear-gradient(135deg, var(--accent), #e6b800);
+      color: #101418; box-shadow: 0 6px 24px rgba(255,204,77,.28);
+    }
+    [data-theme="classic"] .action-btn.primary-green {
+      background: linear-gradient(135deg, var(--accent-2), #27b589);
+      color: #101418; border: none; box-shadow: 0 6px 24px rgba(66,211,165,.28);
+    }
+    [data-theme="classic"] .upload-zone:hover, [data-theme="classic"] .upload-zone.dragover {
+      border-color: var(--accent-2); background: rgba(66,211,165,.05);
+    }
+    [data-theme="classic"] .time-display { color: var(--accent); }
+    [data-theme="classic"] .playing-dot {
+      box-shadow: 0 0 8px rgba(66,211,165,.6); background: var(--accent-2);
+    }
+    [data-theme="classic"] .playing-dot.paused { background: var(--muted); box-shadow: none; }
+
     /* Form row buttons */
     .form-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
     .btn-skip {
@@ -223,6 +269,7 @@
   <div class="topbar">
     <a href="/" class="back-btn">← 返回</a>
     <h1>提示词制作</h1>
+    <button class="theme-toggle-btn" id="themeToggleBtn" title="切换配色">◑</button>
     <span class="step-pill" id="stepPill">第一步：设置人员</span>
   </div>
 
@@ -792,6 +839,25 @@ $('libSave').addEventListener('click', async () => {
     libError.textContent = e.message || '保存失败';
   }
 });
+
+// ── Theme toggle ───────────────────────────────
+(function() {
+  const THEME_KEY = 'cue-monitor-theme';
+  let current = localStorage.getItem(THEME_KEY) || 'mono';
+
+  function applyTheme(t) {
+    current = t;
+    document.documentElement.setAttribute('data-theme', t === 'classic' ? 'classic' : '');
+    localStorage.setItem(THEME_KEY, t);
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.title = t === 'classic' ? '切换至专业配色' : '切换至经典配色';
+  }
+
+  function toggle() { applyTheme(current === 'classic' ? 'mono' : 'classic'); }
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.addEventListener('click', toggle);
+  applyTheme(current);
+})();
 
 </script>
 </body>
