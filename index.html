@@ -3,23 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#101418">
+  <meta name="theme-color" content="#0a0a0a">
   <title>Dance Filming Cue Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #101418;
-      --panel: #171d22;
-      --panel-2: #20272d;
-      --text: #f5f7f8;
-      --muted: #9ba8af;
-      --line: #2f3940;
-      --accent: #ffcc4d;
-      --accent-2: #42d3a5;
-      --danger: #ff6b6b;
-      --blue: #62b4ff;
-      --shadow: 0 20px 60px rgba(0, 0, 0, .35);
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #0a0a0a;
+      --panel: #111111;
+      --panel-2: #1a1a1a;
+      --text: #ececec;
+      --muted: #525252;
+      --line: rgba(255,255,255,.09);
+      --accent: #ececec;
+      --accent-2: #34d399;
+      --danger: #f87171;
+      --blue: #93c5fd;
+      --shadow: 0 24px 64px rgba(0,0,0,.6);
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     * {
@@ -29,9 +32,7 @@
     body {
       margin: 0;
       min-height: 100svh;
-      background:
-        radial-gradient(circle at 14% 0%, rgba(255, 204, 77, .12), transparent 30rem),
-        linear-gradient(145deg, #101418 0%, #152026 45%, #101418 100%);
+      background: var(--bg);
       color: var(--text);
     }
 
@@ -107,12 +108,9 @@
 
     .hero {
       min-height: 44svh;
-      border: 1px solid rgba(255, 255, 255, .08);
+      border: 1px solid var(--line);
       border-radius: 8px;
-      background:
-        linear-gradient(150deg, rgba(255, 204, 77, .16), transparent 42%),
-        linear-gradient(0deg, rgba(0, 0, 0, .16), rgba(0, 0, 0, .16)),
-        var(--panel);
+      background: var(--panel);
       box-shadow: var(--shadow);
       padding: 18px;
       display: grid;
@@ -152,9 +150,9 @@
     /* Now-playing block inside hero */
     .now-playing {
       padding: 12px 16px;
-      border-radius: 12px;
-      background: rgba(66, 211, 165, .12);
-      border: 1px solid rgba(66, 211, 165, .3);
+      border-radius: 8px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.09);
       display: grid;
       gap: 4px;
       text-align: left;
@@ -165,31 +163,30 @@
       gap: 7px;
     }
     .now-playing-dot {
-      width: 9px; height: 9px; border-radius: 50%;
+      width: 8px; height: 8px; border-radius: 50%;
       background: var(--accent-2);
       flex-shrink: 0;
-      box-shadow: 0 0 8px rgba(66, 211, 165, .7);
       animation: nowDotPulse 1.8s ease-in-out infinite;
     }
     .now-playing-label {
-      color: var(--accent-2);
+      color: var(--muted);
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: .08em;
+      letter-spacing: .1em;
       font-weight: 600;
     }
     .now-playing-elapsed {
       margin-left: auto;
-      color: rgba(66, 211, 165, .6);
+      color: var(--muted);
       font-size: 11px;
       font-variant-numeric: tabular-nums;
     }
     @keyframes nowDotPulse {
       0%,100% { opacity: 1; transform: scale(1); }
-      50% { opacity: .4; transform: scale(.7); }
+      50% { opacity: .35; transform: scale(.7); }
     }
     .now-playing-text {
-      color: var(--accent-2);
+      color: var(--text);
       font-size: clamp(26px, 8vw, 48px);
       font-weight: 800;
       line-height: 1;
@@ -198,23 +195,22 @@
       white-space: nowrap;
     }
     .now-playing-shot {
-      color: rgba(66, 211, 165, .65);
+      color: var(--muted);
       font-size: clamp(13px, 3vw, 17px);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .now-playing.idle {
-      background: rgba(255, 255, 255, .045);
-      border-color: rgba(255, 255, 255, .08);
+      background: rgba(255,255,255,.02);
+      border-color: rgba(255,255,255,.05);
     }
     .now-playing.idle .now-playing-dot {
-      background: var(--muted);
-      box-shadow: none;
+      background: rgba(255,255,255,.2);
       animation: none;
     }
     .now-playing.idle .now-playing-label,
-    .now-playing.idle .now-playing-text { color: var(--muted); }
+    .now-playing.idle .now-playing-text { color: rgba(255,255,255,.25); }
     .now-playing.idle .now-playing-elapsed { display: none; }
 
     .label {
@@ -227,8 +223,9 @@
       font-variant-numeric: tabular-nums;
       font-size: clamp(48px, 19vw, 142px);
       line-height: .92;
-      color: var(--accent);
-      text-shadow: 0 10px 32px rgba(255, 204, 77, .18);
+      color: var(--text);
+      font-weight: 900;
+      letter-spacing: -.02em;
     }
 
     .name {
@@ -290,8 +287,8 @@
     }
 
     .primary {
-      color: #101418;
-      background: var(--accent);
+      color: #0a0a0a;
+      background: var(--text);
     }
 
     .secondary {
@@ -301,13 +298,13 @@
     }
 
     .secondary.blue {
-      border-color: rgba(98, 180, 255, .55);
-      color: #d9ecff;
+      border-color: rgba(255,255,255,.2);
+      color: var(--text);
     }
 
     .secondary.active {
-      border-color: rgba(66, 211, 165, .72);
-      color: var(--accent-2);
+      border-color: rgba(255,255,255,.45);
+      color: var(--text);
     }
 
     .nudge {
@@ -364,18 +361,18 @@
     }
 
     .cue-item.active {
-      border-color: rgba(66, 211, 165, .65);
-      background: rgba(66, 211, 165, .08);
+      border-color: rgba(255,255,255,.3);
+      background: rgba(255,255,255,.05);
     }
 
     .cue-item.next {
-      border-color: rgba(255, 204, 77, .65);
+      border-color: rgba(255,255,255,.14);
     }
 
     .cue-time {
       font-variant-numeric: tabular-nums;
-      color: var(--accent);
-      font-weight: 800;
+      color: var(--text);
+      font-weight: 700;
     }
 
     .cue-copy {
@@ -514,11 +511,10 @@
       display: none !important;
     }
     .cue-item.done {
-      opacity: 0.4;
-      border-color: rgba(66, 211, 165, .4);
+      opacity: 0.3;
+      border-color: rgba(255,255,255,.05);
     }
     .cue-item.done .cue-time {
-      color: var(--accent-2);
       text-decoration: line-through;
     }
     .cue-item.done .cue-copy strong {
@@ -577,7 +573,7 @@
     }
     .client-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent-2); box-shadow: 0 0 6px var(--accent-2);
+      background: var(--accent-2);
     }
 
     /* Countdown urgent flash */
@@ -606,7 +602,7 @@
     }
     .client-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: var(--accent-2); box-shadow: 0 0 6px var(--accent-2);
+      background: var(--accent-2);
     }
 
     /* Countdown urgent flash */
@@ -638,8 +634,8 @@
     .online-user-dot {
       width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
     }
-    .online-user-dot.host { background: var(--accent); box-shadow: 0 0 5px rgba(255,204,77,.5); }
-    .online-user-dot.client { background: var(--accent-2); box-shadow: 0 0 5px rgba(66,211,165,.5); }
+    .online-user-dot.host { background: var(--text); }
+    .online-user-dot.client { background: var(--accent-2); }
     .online-user-name { font-weight: 600; flex: 1; }
     .online-user-role { color: var(--muted); font-size: 11px; }
 
@@ -654,23 +650,23 @@
     .lobby-fields { display: flex; flex-direction: column; gap: 10px; align-items: center; }
     .lobby-fields input { width: 200px; }
 
-    /* Maker link */
+    /* Maker / Library links */
     .maker-link {
       display: inline-flex; align-items: center; gap: 7px;
       margin-top: 10px;
-      padding: 10px 20px;
-      border-radius: 10px;
-      border: 1px dashed rgba(66,211,165,.4);
-      background: rgba(66,211,165,.07);
-      color: var(--accent-2);
+      padding: 10px 22px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
       font-size: 14px; font-weight: 600;
       text-decoration: none;
       cursor: pointer;
       transition: background .15s, border-color .15s;
     }
     .maker-link:hover {
-      background: rgba(66,211,165,.14);
-      border-color: rgba(66,211,165,.7);
+      background: rgba(255,255,255,.09);
+      border-color: rgba(255,255,255,.25);
     }
   </style>
 </head>

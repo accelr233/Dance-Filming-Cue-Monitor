@@ -11,9 +11,9 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0e1117; --surface: #161b22; --surface2: #1e242d;
-      --border: rgba(255,255,255,.09); --text: #e6edf3; --muted: #8b949e;
-      --accent: #ffcc4d; --accent-2: #42d3a5; --danger: #ff6b6b;
+      --bg: #0a0a0a; --surface: #111111; --surface2: #1a1a1a;
+      --border: rgba(255,255,255,.09); --text: #ececec; --muted: #525252;
+      --accent: #ececec; --accent-2: #34d399; --danger: #f87171;
     }
     html, body { height: 100%; background: var(--bg); color: var(--text);
       font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.5; }
@@ -39,7 +39,7 @@
       background: rgba(255,255,255,.05); color: var(--muted);
       font-size: 13px; font-weight: 600; cursor: pointer;
     }
-    .admin-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255,204,77,.1); }
+    .admin-btn.active { border-color: rgba(255,255,255,.4); color: var(--text); background: rgba(255,255,255,.07); }
 
     /* Search */
     .search-wrap { position: relative; margin-bottom: 16px; }
@@ -63,15 +63,15 @@
     /* Admin toolbar */
     .admin-toolbar {
       display: none; align-items: center; gap: 10px;
-      padding: 10px 14px; background: rgba(255,204,77,.07);
-      border: 1px solid rgba(255,204,77,.2); border-radius: 10px;
+      padding: 10px 14px; background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.1); border-radius: 8px;
       margin-bottom: 14px;
     }
     .admin-toolbar.visible { display: flex; }
-    .admin-toolbar span { font-size: 13px; color: var(--accent); font-weight: 600; flex: 1; }
+    .admin-toolbar span { font-size: 13px; color: var(--text); font-weight: 600; flex: 1; }
     .btn-add-song {
-      padding: 8px 14px; border-radius: 8px; border: none;
-      background: var(--accent); color: #101418; font-size: 14px;
+      padding: 8px 14px; border-radius: 6px; border: none;
+      background: var(--text); color: #0a0a0a; font-size: 14px;
       font-weight: 700; cursor: pointer;
     }
 
@@ -96,8 +96,8 @@
     .song-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .ver-count {
       font-size: 12px; padding: 3px 9px; border-radius: 999px;
-      background: rgba(66,211,165,.12); color: var(--accent-2);
-      border: 1px solid rgba(66,211,165,.2); white-space: nowrap;
+      background: rgba(255,255,255,.07); color: var(--muted);
+      border: 1px solid rgba(255,255,255,.1); white-space: nowrap;
     }
     .expand-icon { color: var(--muted); font-size: 14px; transition: transform .2s; }
     .song-card.open .expand-icon { transform: rotate(180deg); }
@@ -126,8 +126,8 @@
       border: 1px solid var(--border); background: rgba(255,255,255,.05);
       color: var(--muted); white-space: nowrap;
     }
-    .tag.choreo { border-color: rgba(255,204,77,.3); color: var(--accent); background: rgba(255,204,77,.08); }
-    .tag.label  { border-color: rgba(66,211,165,.3); color: var(--accent-2); background: rgba(66,211,165,.08); }
+    .tag.choreo { border-color: rgba(255,255,255,.15); color: var(--text); background: rgba(255,255,255,.07); }
+    .tag.label  { border-color: rgba(255,255,255,.12); color: var(--muted); background: rgba(255,255,255,.05); }
     .version-date { font-size: 11px; color: var(--muted); white-space: nowrap; margin-top: 3px; }
     .cue-preview {
       font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
@@ -144,13 +144,13 @@
     .version-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     /* Buttons */
-    .btn { padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: var(--text); transition: background .15s; }
+    .btn { padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: var(--text); transition: background .15s; }
     .btn:hover { background: rgba(255,255,255,.1); }
-    .btn.green { border-color: rgba(66,211,165,.4); color: var(--accent-2); background: rgba(66,211,165,.08); }
-    .btn.green:hover { background: rgba(66,211,165,.16); }
-    .btn.red { border-color: rgba(255,107,107,.3); color: var(--danger); background: rgba(255,107,107,.07); }
-    .btn.red:hover { background: rgba(255,107,107,.14); }
-    .btn.yellow { border-color: rgba(255,204,77,.3); color: var(--accent); background: rgba(255,204,77,.08); }
+    .btn.green { border-color: rgba(255,255,255,.15); color: var(--text); background: rgba(255,255,255,.07); }
+    .btn.green:hover { background: rgba(255,255,255,.13); }
+    .btn.red { border-color: rgba(255,107,107,.25); color: var(--danger); background: rgba(255,107,107,.05); }
+    .btn.red:hover { background: rgba(255,107,107,.1); }
+    .btn.yellow { border-color: rgba(255,255,255,.15); color: var(--text); background: rgba(255,255,255,.07); }
     .btn.sm { padding: 5px 10px; font-size: 12px; }
 
     /* Modal */
