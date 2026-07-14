@@ -168,25 +168,31 @@
     .upload-zone p { color: var(--muted); font-size: 14px; }
     .upload-zone input { display: none; }
 
-    /* Video & Zones */
+    /* Video & Zone Buttons */
     .video-container { position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: #000; }
     #videoPlayer {
       width: 100%; display: block;
       max-height: 300px; object-fit: contain;
     }
-    .video-zones {
-      position: absolute; top: 0; left: 0; right: 0; bottom: 44px; /* leave space for native controls */
-      display: flex; z-index: 10;
+    /* Zone buttons row (below video, works on all platforms incl. iOS) */
+    .zone-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
     }
-    .zone {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      color: transparent; font-size: 24px; font-weight: 800; font-family: 'Inter', sans-serif;
-      transition: background .1s, color .1s; cursor: pointer;
+    .zone-btn {
+      height: 54px; border-radius: 10px;
+      font-size: 17px; font-weight: 800;
+      border: 1.5px dashed rgba(255,255,255,.18);
+      background: rgba(255,255,255,.04);
+      color: var(--muted); cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s, transform .1s;
+      touch-action: manipulation;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
     }
-    .zone:active {
-      background: rgba(255,255,255,.15);
-      color: rgba(255,255,255,.5);
-    }
+    .zone-btn:hover { background: rgba(255,255,255,.08); color: var(--text); border-color: rgba(255,255,255,.35); }
+    .zone-btn:active { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.6); color: var(--text); transform: scale(.96); }
+    [data-theme="classic"] .zone-btn { border-color: rgba(255,204,77,.25); }
+    [data-theme="classic"] .zone-btn:hover { border-color: rgba(255,204,77,.6); color: var(--accent); background: rgba(255,204,77,.07); }
+    [data-theme="classic"] .zone-btn:active { background: rgba(255,204,77,.14); }
     .video-time-bar { display: flex; align-items: center; gap: 10px; padding: 6px 0 2px; }
     .time-display { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 800; color: var(--text); min-width: 64px; }
     .playing-dot {
@@ -330,11 +336,13 @@
   <div class="phase" id="phase3">
     <div class="video-container">
       <video id="videoPlayer" controls playsinline webkit-playsinline loop></video>
-      <div class="video-zones" id="videoZones">
-        <div class="zone" data-pos="左">左</div>
-        <div class="zone" data-pos="中">中</div>
-        <div class="zone" data-pos="右">右</div>
-      </div>
+    </div>
+
+    <!-- Zone buttons: tap to pause + auto-select position -->
+    <div class="zone-row" id="videoZones">
+      <button class="zone-btn" data-pos="左">◀ 左</button>
+      <button class="zone-btn" data-pos="中">● 中</button>
+      <button class="zone-btn" data-pos="右">右 ▶</button>
     </div>
 
     <div class="video-time-bar">
@@ -744,17 +752,18 @@ markBtn.addEventListener('click', enterMarkState);
 resumeBtn.addEventListener('click', enterIdleState);
 
 videoZones.addEventListener('click', (e) => {
-  if (e.target.classList.contains('zone')) {
-    const pos = e.target.dataset.pos;
-    enterMarkState();
-    
-    // Auto-select the corresponding tip
-    const presetTips = ["左", "中", "右", "特写", "全景", "拉远"]; // same as init array
-    if (presetTips.includes(pos)) {
-      selectedTips.add(pos);
-      renderTipChips();
-    }
+  const btn = e.target.closest('.zone-btn');
+  if (!btn) return;
+  const pos = btn.dataset.pos;
+  enterMarkState();
+  // Auto-select the corresponding tip chip
+  const presetTips = ['左', '中', '右', '特写', '全景', '拉远'];
+  if (presetTips.includes(pos)) {
+    selectedTips.add(pos);
+    renderTipChips();
   }
+  // Scroll form into view
+  cueFormCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 
 skipBtn.addEventListener('click', enterSavedState);
