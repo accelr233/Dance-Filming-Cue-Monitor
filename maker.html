@@ -168,10 +168,24 @@
     .upload-zone p { color: var(--muted); font-size: 14px; }
     .upload-zone input { display: none; }
 
-    /* Video */
+    /* Video & Zones */
+    .video-container { position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: #000; }
     #videoPlayer {
-      width: 100%; border-radius: 12px; background: #000;
+      width: 100%; display: block;
       max-height: 300px; object-fit: contain;
+    }
+    .video-zones {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 44px; /* leave space for native controls */
+      display: flex; z-index: 10;
+    }
+    .zone {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: transparent; font-size: 24px; font-weight: 800; font-family: 'Inter', sans-serif;
+      transition: background .1s, color .1s; cursor: pointer;
+    }
+    .zone:active {
+      background: rgba(255,255,255,.15);
+      color: rgba(255,255,255,.5);
     }
     .video-time-bar { display: flex; align-items: center; gap: 10px; padding: 6px 0 2px; }
     .time-display { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 800; color: var(--text); min-width: 64px; }
@@ -314,7 +328,14 @@
 
   <!-- ══ PHASE 3: Record ══ -->
   <div class="phase" id="phase3">
-    <video id="videoPlayer" controls playsinline webkit-playsinline loop></video>
+    <div class="video-container">
+      <video id="videoPlayer" controls playsinline webkit-playsinline loop></video>
+      <div class="video-zones" id="videoZones">
+        <div class="zone" data-pos="左">左</div>
+        <div class="zone" data-pos="中">中</div>
+        <div class="zone" data-pos="右">右</div>
+      </div>
+    </div>
 
     <div class="video-time-bar">
       <span class="playing-dot" id="playingDot"></span>
@@ -443,6 +464,7 @@ const backToSetupBtn = $('backToSetupBtn');
 const uploadZone = $('uploadZone');
 const fileInput = $('fileInput');
 const videoPlayer = $('videoPlayer');
+const videoZones = $('videoZones');
 const playingDot = $('playingDot');
 const currentTimeDisplay = $('currentTimeDisplay');
 const totalTimeDisplay = $('totalTimeDisplay');
@@ -720,6 +742,20 @@ function enterSavedState() {
 
 markBtn.addEventListener('click', enterMarkState);
 resumeBtn.addEventListener('click', enterIdleState);
+
+videoZones.addEventListener('click', (e) => {
+  if (e.target.classList.contains('zone')) {
+    const pos = e.target.dataset.pos;
+    enterMarkState();
+    
+    // Auto-select the corresponding tip
+    const presetTips = ["左", "中", "右", "特写", "全景", "拉远"]; // same as init array
+    if (presetTips.includes(pos)) {
+      selectedTips.add(pos);
+      renderTipChips();
+    }
+  }
+});
 
 skipBtn.addEventListener('click', enterSavedState);
 
