@@ -174,6 +174,26 @@
       width: 100%; display: block;
       max-height: 300px; object-fit: contain;
     }
+
+    /* Audio player container */
+    .audio-container {
+      width: 100%; border-radius: 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 20px 16px 16px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    .audio-art {
+      font-size: 64px; line-height: 1;
+      width: 100px; height: 100px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.05); border-radius: 16px;
+    }
+    #audioPlayer {
+      width: 100%; height: 48px;
+      border-radius: 10px;
+    }
+    /* Style the native audio controls color */
+    audio { color-scheme: dark; accent-color: var(--accent-2); }
     /* Zone buttons row (below video, works on all platforms incl. iOS) */
     .zone-row {
       display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
@@ -334,8 +354,13 @@
 
   <!-- ══ PHASE 3: Record ══ -->
   <div class="phase" id="phase3">
-    <div class="video-container">
-      <video id="videoPlayer" controls playsinline webkit-playsinline loop></video>
+    <!-- Media player: video shows for video files, audio shows for audio files -->
+    <div class="video-container" id="videoContainer">
+      <video id="videoPlayer" controls playsinline webkit-playsinline loop x-webkit-airplay="allow"></video>
+    </div>
+    <div class="audio-container" id="audioContainer" style="display:none;">
+      <div class="audio-art" id="audioArt">🎵</div>
+      <audio id="audioPlayer" controls loop x-webkit-airplay="allow"></audio>
     </div>
 
     <!-- Zone buttons: tap to pause + auto-select position -->
@@ -472,6 +497,9 @@ const backToSetupBtn = $('backToSetupBtn');
 const uploadZone = $('uploadZone');
 const fileInput = $('fileInput');
 const videoPlayer = $('videoPlayer');
+const audioPlayer = $('audioPlayer');
+const videoContainer = $('videoContainer');
+const audioContainer = $('audioContainer');
 const videoZones = $('videoZones');
 const playingDot = $('playingDot');
 const currentTimeDisplay = $('currentTimeDisplay');
@@ -494,6 +522,10 @@ const outputCount = $('outputCount');
 const copyBtn = $('copyBtn');
 const clearBtn = $('clearBtn');
 const backToUploadBtn = $('backToUploadBtn');
+
+// Active media player (video or audio depending on file type)
+let activePlayer = videoPlayer;
+let isAudioMode = false;
 
 // ── Helpers ───────────────────────────────────────
 function fmt(s) {
@@ -619,30 +651,87 @@ uploadZone.addEventListener('drop', e => {
   loadFile(e.dataTransfer.files?.[0]);
 });
 
+// Detect audio vs video by MIME type
+function isAudioFile(file) {
+  return file.type.startsWith('audio/') || /\.(mp3|m4a|aac|wav|flac|ogg)$/i.test(file.name);
+}
+
 function loadFile(file) {
   if (!file) return;
-  videoPlayer.src = URL.createObjectURL(file);
+
+  const audioMode = isAudioFile(file);
+  isAudioMode = audioMode;
+
+  if (audioMode) {
+    // Revoke old video src if any
+    if (videoPlayer.src) { URL.revokeObjectURL(videoPlayer.src); videoPlayer.src = ''; }
+    // Switch to audio mode
+    audioPlayer.src = URL.createObjectURL(file);
+    activePlayer = audioPlayer;
+    videoContainer.style.display = 'none';
+    audioContainer.style.display = 'flex';
+    // Hide zone buttons (no spatial zones for audio-only)
+    videoZones.style.display = 'none';
+  } else {
+    // Revoke old audio src if any
+    if (audioPlayer.src) { URL.revokeObjectURL(audioPlayer.src); audioPlayer.src = ''; }
+    // Switch to video mode
+    videoPlayer.src = URL.createObjectURL(file);
+    activePlayer = videoPlayer;
+    videoContainer.style.display = '';
+    audioContainer.style.display = 'none';
+    videoZones.style.display = '';
+  }
+
   markBtn.disabled = false;
   renderNameChips();
   renderTipChips();
   showPhase(3);
   enterIdleState();
+
+  // MediaSession API: allows lock-screen / background playback on iOS & Android
+  setupMediaSession(file.name.replace(/\.[^.]+$/, ''));
+}
+
+function setupMediaSession(title) {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: title || '提示词制作',
+    artist: 'Dance Filming Cue Monitor',
+    artwork: []
+  });
+  // Bind standard control actions so lock-screen buttons work
+  const actions = ['play', 'pause', 'stop'];
+  actions.forEach(action => {
+    try {
+      navigator.mediaSession.setActionHandler(action, () => {
+        if (action === 'play')  { activePlayer.play(); }
+        if (action === 'pause') { activePlayer.pause(); }
+        if (action === 'stop')  { activePlayer.pause(); activePlayer.currentTime = 0; }
+      });
+    } catch(_) {}
+  });
 }
 
 backToUploadBtn.addEventListener('click', () => {
-  videoPlayer.pause();
+  activePlayer.pause();
   showPhase(2);
 });
 
 // ── Phase 3: Recording ────────────────────────────
-videoPlayer.addEventListener('loadedmetadata', () => {
-  totalTimeDisplay.textContent = `/ ${fmt(videoPlayer.duration)}`;
-});
-videoPlayer.addEventListener('timeupdate', () => {
-  currentTimeDisplay.textContent = fmt(videoPlayer.currentTime);
-});
-videoPlayer.addEventListener('play', () => playingDot.classList.remove('paused'));
-videoPlayer.addEventListener('pause', () => playingDot.classList.add('paused'));
+function bindPlayerEvents(player) {
+  player.addEventListener('loadedmetadata', () => {
+    totalTimeDisplay.textContent = `/ ${fmt(player.duration)}`;
+  });
+  player.addEventListener('timeupdate', () => {
+    currentTimeDisplay.textContent = fmt(player.currentTime);
+  });
+  player.addEventListener('play', () => playingDot.classList.remove('paused'));
+  player.addEventListener('pause', () => playingDot.classList.add('paused'));
+}
+bindPlayerEvents(videoPlayer);
+bindPlayerEvents(audioPlayer);
+
 
 // Name chips
 function renderNameChips() {
@@ -720,8 +809,8 @@ function updateNameSummary() {
 
 // State machine
 function enterMarkState() {
-  videoPlayer.pause();
-  markedTime = videoPlayer.currentTime;
+  activePlayer.pause();
+  markedTime = activePlayer.currentTime;
   markedTimeEl.textContent = fmt(markedTime);
   // Reset selections
   selectedNames.clear();
@@ -739,7 +828,7 @@ function enterIdleState() {
   cueFormCard.style.display = 'none';
   resumeBtn.style.display = 'none';
   markBtn.style.display = 'flex';
-  videoPlayer.play().catch(() => {});
+  activePlayer.play().catch(() => {});
 }
 
 function enterSavedState() {
