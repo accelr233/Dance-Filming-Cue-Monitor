@@ -815,7 +815,12 @@
         </div>
         <div style="padding: 10px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; display: grid; gap: 10px;">
           <input id="audioFile" type="file" accept=".mp3,.m4a,.aac,.wav,.flac,.mp4,.mov,.m4v,audio/*,video/*" aria-label="上传音频/视频" style="border: none; background: transparent; padding: 0;">
-          <video id="audioPlayer" id="mediaPlayer" controls loop playsinline webkit-playsinline style="width:100%; border-radius:6px; margin-top:4px; display:none;"></video>
+          <!-- audio element for MP3/WAV/AAC etc (visible on all platforms) -->
+          <audio id="audioPlayer" controls loop x-webkit-airplay="allow"
+            style="width:100%; border-radius:6px; margin-top:4px; display:none; color-scheme:dark; accent-color:#42d3a5;"></audio>
+          <!-- video element for MP4/MOV etc -->
+          <video id="videoPlayer" controls loop playsinline webkit-playsinline x-webkit-airplay="allow"
+            style="width:100%; border-radius:6px; margin-top:4px; display:none; max-height:240px; background:#000; object-fit:contain;"></video>
         </div>
         <p class="hint">支持音频（MP3/WAV等）和视频（MP4）。播放、暂停、拖动进度条实时同步到所有摄影师。</p>
       </section>
@@ -1106,7 +1111,9 @@
             if (tapTimer) return;
             tapTimer = setTimeout(() => {
               tapTimer = null;
-              const player = $("#audioPlayer");
+              // Use whichever player is currently active (audio or video)
+              const player = (typeof activePlayer !== 'undefined') ? activePlayer
+                           : ($("#videoPlayer")?.src ? $("#videoPlayer") : $("#audioPlayer"));
               if (player && player.src) {
                 player.currentTime = cue.time;
                 // If paused, keep paused but update sync state
@@ -1170,57 +1177,100 @@
       requestAnimationFrame(tick);
     }
 
-    const audioPlayer = $("#audioPlayer");
+    // ── Dual media player (audio + video) ────────────────────────────────────
+    const audioPlayer = $("#audioPlayer");  // <audio> element, for MP3/WAV/AAC
+    const videoPlayer = $("#videoPlayer");  // <video> element, for MP4/MOV
+    let activePlayer = audioPlayer;         // currently active element
+
+    function isAudioFile(file) {
+      return file.type.startsWith('audio/') || /\.(mp3|m4a|aac|wav|flac|ogg)$/i.test(file.name);
+    }
 
     $("#audioFile").addEventListener("change", event => {
       const file = event.target.files?.[0];
       if (!file) return;
-      const isVideo = file.type.startsWith('video/');
-      audioPlayer.style.display = 'block';
-      if (isVideo) {
-        audioPlayer.style.maxHeight = '240px';
-        audioPlayer.style.background = '#000';
-        audioPlayer.style.objectFit = 'contain';
+
+      const isAudio = isAudioFile(file);
+
+      if (isAudio) {
+        // Show <audio>, hide <video>
+        if (videoPlayer.src) { URL.revokeObjectURL(videoPlayer.src); videoPlayer.src = ''; }
+        videoPlayer.style.display = 'none';
+        audioPlayer.src = URL.createObjectURL(file);
+        audioPlayer.style.display = 'block';
+        activePlayer = audioPlayer;
       } else {
-        audioPlayer.style.maxHeight = '44px';
-        audioPlayer.style.background = 'transparent';
-        audioPlayer.style.objectFit = '';
+        // Show <video>, hide <audio>
+        if (audioPlayer.src) { URL.revokeObjectURL(audioPlayer.src); audioPlayer.src = ''; }
+        audioPlayer.style.display = 'none';
+        videoPlayer.src = URL.createObjectURL(file);
+        videoPlayer.style.display = 'block';
+        activePlayer = videoPlayer;
       }
-      audioPlayer.src = URL.createObjectURL(file);
+
+      // MediaSession API: keeps audio alive on lock screen (iOS 14+ / Android Chrome)
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: file.name.replace(/\.[^.]+$/, ''),
+          artist: 'Dance Filming Cue Monitor',
+          artwork: []
+        });
+        ['play', 'pause', 'stop'].forEach(action => {
+          try {
+            navigator.mediaSession.setActionHandler(action, () => {
+              if (action === 'play')  activePlayer.play();
+              if (action === 'pause') activePlayer.pause();
+              if (action === 'stop')  { activePlayer.pause(); activePlayer.currentTime = 0; }
+            });
+          } catch(_) {}
+        });
+      }
     });
 
-    audioPlayer.addEventListener("play", () => {
-      syncTo(audioPlayer.currentTime, "播放中", true);
-    });
+    // Bind play/pause/seek/timeupdate events to both players identically
+    function bindMediaEvents(player) {
+      player.addEventListener("play", () => {
+        if (player !== activePlayer) return;
+        syncTo(player.currentTime, "播放中", true);
+      });
 
-    audioPlayer.addEventListener("pause", () => {
-      // loop triggers a very brief pause-then-play; ignore if it immediately replays
-      setTimeout(() => {
-        if (audioPlayer.paused) {
-          state.running = false;
-          state.pausedAt = audioPlayer.currentTime;
-          $("#syncState").textContent = "已暂停";
+      player.addEventListener("pause", () => {
+        if (player !== activePlayer) return;
+        // loop triggers a very brief pause-then-play; ignore if it immediately replays
+        setTimeout(() => {
+          if (player.paused) {
+            state.running = false;
+            state.pausedAt = player.currentTime;
+            $("#syncState").textContent = "已暂停";
+            broadcastState();
+          }
+        }, 80);
+      });
+
+      player.addEventListener("seeked", () => {
+        if (player !== activePlayer) return;
+        if (!player.paused) {
+          syncTo(player.currentTime, "播放中", true);
+        } else {
+          state.pausedAt = player.currentTime;
           broadcastState();
+          renderHero();
         }
-      }, 80);
-    });
+      });
 
-    audioPlayer.addEventListener("seeked", () => {
-      if (!audioPlayer.paused) {
-        syncTo(audioPlayer.currentTime, "播放中", true);
-      } else {
-        state.pausedAt = audioPlayer.currentTime;
-        broadcastState();
-        renderHero();
-      }
-    });
+      // Keep internal clock locked to real audio position while playing
+      player.addEventListener("timeupdate", () => {
+        if (player !== activePlayer) return;
+        if (state.role === "host" && state.running) {
+          state.startAt = performance.now() - player.currentTime * 1000;
+        }
+      });
+    }
 
-    // Keep internal clock locked to real audio position while playing
-    audioPlayer.addEventListener("timeupdate", () => {
-      if (state.role === "host" && state.running) {
-        state.startAt = performance.now() - audioPlayer.currentTime * 1000;
-      }
-    });
+    bindMediaEvents(audioPlayer);
+    bindMediaEvents(videoPlayer);
+
+
 
     $("#cueForm").addEventListener("submit", event => {
       event.preventDefault();
